@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #111827;
+      }
+
+      pick-select-example {
+        --select-bg: #1e293b;
+        --select-fg: #e5eefb;
+        --select-muted: #cbd5e1;
+        --select-border: rgba(148, 163, 184, 0.35);
+        --select-control-bg: #0f172a;
+        --select-control-fg: #e5eefb;
+        --select-accent: #67e8f9;
+        --select-focus: rgba(103, 232, 249, 0.35);
+        --select-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      await bootstrapFramework(Services);
+      await import("./pick-select.example.js");
+    </script>
+  </head>
+  <body>
+    <pick-select-example></pick-select-example>
+  </body>
+</html>

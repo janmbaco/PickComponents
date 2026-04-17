@@ -1,0 +1,67 @@
+:host {
+  display: block;
+  max-width: 48rem;
+  color: var(--api-fg, #e5eefb);
+}
+
+.panel,
+.block {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.panel {
+  padding: 1rem;
+  border: 1px solid var(--api-border, rgba(148, 163, 184, 0.35));
+  border-radius: 1rem;
+  background: var(--api-bg, #1e293b);
+  box-shadow: var(--api-shadow, none);
+}
+
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--api-accent, #67e8f9);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+input,
+button {
+  border: 1px solid var(--api-border, rgba(148, 163, 184, 0.35));
+  border-radius: 0.75rem;
+  font: inherit;
+}
+
+input {
+  padding: 0.65rem 0.75rem;
+  background: var(--api-control-bg, #0f172a);
+  color: var(--api-control-fg, #e5eefb);
+}
+
+button {
+  width: fit-content;
+  padding: 0.6rem 0.85rem;
+  background: var(--api-button-bg, #67e8f9);
+  color: var(--api-button-fg, #083344);
+  font-weight: 800;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}

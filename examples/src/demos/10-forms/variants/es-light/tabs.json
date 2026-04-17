@@ -1,0 +1,12 @@
+{
+  "tabs": [
+    { "file": "forms.example.ts", "label": "Componente" },
+    { "file": "forms.rules-service.ts", "label": "Servicio de Reglas" },
+    { "file": "forms.initializer.ts", "label": "Inicializador" },
+    { "file": "forms.styles.css", "label": "Estilos" },
+    { "file": "main.ts", "label": "Arranque" },
+    { "file": "index.html", "label": "Montaje" }
+  ],
+  "entry": "main.ts",
+  "autoBootstrap": false
+}

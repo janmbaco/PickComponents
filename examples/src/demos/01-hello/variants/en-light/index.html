@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #f8fafc;
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      import "./hello.example.js";
+      await bootstrapFramework(Services);
+    </script>
+  </head>
+  <body>
+    <hello-example></hello-example>
+  </body>
+</html>

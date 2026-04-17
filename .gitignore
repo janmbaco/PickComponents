@@ -1,0 +1,55 @@
+node_modules/
+dist/
+*.log
+*.swp
+*.swo
+
+# IDE and editor
+.vscode/
+.idea/
+.obsidian/
+
+# Cache
+.cache/
+
+# Private plans and working docs
+.plans/
+.release-artifacts/
+
+# Test reports and artifacts
+.artifacts/
+test-results/
+playwright-report/
+test-output.txt
+test-results.log
+test-screenshot.png
+
+# Browser dev profiles / local storage
+.codex
+.edge-profile-devtools/
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# OS noise
+.DS_Store
+Thumbs.db
+*.bak
+
+# Root build artifacts
+bundle.js
+
+# Built example bundles
+examples/bundle.js
+examples/bundle.js.map
+
+# Playground build outputs
+examples/playground-examples/
+examples/vendor/
+
+# Docker-related vendored files (generated during build)
+examples/typescript-standalone.js
+examples/reflect-metadata.js
+examples/injectkit.esm.js
+examples/pick-components.esm.js
+examples/pick-components-bootstrap.esm.js

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #111827;
+      }
+
+      counter-example {
+        --counter-fg: #e5eefb;
+        --counter-border: rgba(148, 163, 184, 0.35);
+        --counter-button-bg: #1e293b;
+        --counter-button-fg: #e5eefb;
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      import "./counter.example.js";
+      await bootstrapFramework(Services);
+    </script>
+  </head>
+  <body>
+    <counter-example></counter-example>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+<section class="panel">
+  <p class="eyebrow">@Pick</p>
+  <h3>Catálogo de Productos</h3>
+
+  <pick-select>
+    <on condition="{{refreshing}}">
+      <button disabled aria-busy="true">Actualizando...</button>
+    </on>
+    <otherwise>
+      <pick-action action="refresh"><button>Actualizar</button></pick-action>
+    </otherwise>
+  </pick-select>
+
+  <pick-select>
+    <on condition="{{products.length > 0}}">
+      <pick-for items="{{products}}" key="id">
+        <p><strong>{{$item.name}}</strong> - ${{$item.price}} · Existencias: {{$item.stock}}</p>
+      </pick-for>
+    </on>
+    <otherwise>
+      <p>Sin resultados.</p>
+    </otherwise>
+  </pick-select>
+</section>

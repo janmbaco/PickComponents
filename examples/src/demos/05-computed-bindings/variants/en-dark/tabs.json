@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "computed.example.ts", "label": "Component" },
+    { "file": "computed.styles.css", "label": "Styles" },
+    { "file": "index.html", "label": "HTML" }
+  ]
+}

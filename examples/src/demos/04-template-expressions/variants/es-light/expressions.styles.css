@@ -1,0 +1,56 @@
+:host {
+  display: block;
+  max-width: 28rem;
+  color: var(--expressions-fg, #0f172a);
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--expressions-border, #cbd5e1);
+  border-radius: 1rem;
+  background: var(--expressions-bg, #ffffff);
+  box-shadow: var(--expressions-shadow, none);
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--expressions-muted, #475569);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--expressions-border, #cbd5e1);
+  border-radius: 0.7rem;
+  background: var(--expressions-input-bg, #ffffff);
+  color: var(--expressions-input-fg, #0f172a);
+  font: inherit;
+}
+
+.examples {
+  display: grid;
+  gap: 0.45rem;
+}
+
+p {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+}
+
+code {
+  color: var(--expressions-muted, #475569);
+  font-size: 0.82rem;
+}
+
+strong {
+  color: var(--expressions-accent, #2563eb);
+  text-align: right;
+}

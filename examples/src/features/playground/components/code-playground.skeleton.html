@@ -1,0 +1,43 @@
+<div
+  data-state="playground-loading"
+  role="status"
+  aria-live="polite"
+  aria-busy="true"
+  class="pg-loading-container"
+>
+  <div class="pg-loading-row pg-loading-animate">
+    <svg
+      class="pg-loading-spinner"
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+    >
+      <circle
+        cx="10"
+        cy="10"
+        r="8"
+        fill="none"
+        stroke="rgba(188, 196, 208, 0.10)"
+        stroke-width="4"
+      ></circle>
+      <path
+        d="M10 2 A8 8 0 0 1 18 10"
+        fill="none"
+        stroke="var(--pg-tab-active, #bcc4d0)"
+        stroke-width="4"
+        stroke-linecap="round"
+      >
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          from="0 10 10"
+          to="360 10 10"
+          dur="1s"
+          repeatCount="indefinite"
+        ></animateTransform>
+      </path>
+    </svg>
+    <span class="pg-loading-label">{{t.LOADING}}</span>
+  </div>
+</div>

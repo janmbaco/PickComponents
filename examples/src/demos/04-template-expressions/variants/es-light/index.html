@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #f8fafc;
+      }
+
+      template-expressions-example {
+        --expressions-bg: #ffffff;
+        --expressions-fg: #0f172a;
+        --expressions-muted: #475569;
+        --expressions-border: #cbd5e1;
+        --expressions-input-bg: #ffffff;
+        --expressions-input-fg: #0f172a;
+        --expressions-accent: #2563eb;
+        --expressions-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      import "./expressions.example.js";
+      await bootstrapFramework(Services);
+    </script>
+  </head>
+  <body>
+    <template-expressions-example></template-expressions-example>
+  </body>
+</html>

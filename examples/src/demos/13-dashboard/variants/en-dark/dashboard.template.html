@@ -1,0 +1,39 @@
+<section class="panel">
+  <p class="eyebrow">Composition</p>
+  <h3>Mini Dashboard</h3>
+
+  <div class="stats">
+    <div class="stat"><p class="stat-lbl">Users</p><p class="stat-val">{{userCount}}</p></div>
+    <div class="stat"><p class="stat-lbl">Posts</p><p class="stat-val">{{postCount}}</p></div>
+    <div class="stat"><p class="stat-lbl">Notes</p><p class="stat-val">{{notes.length}}</p></div>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h4>Users</h4>
+      <pick-for items="{{users}}" key="id">
+        <p><strong>{{$item.name}}</strong><br /><small>{{$item.email}}</small></p>
+      </pick-for>
+    </section>
+
+    <section>
+      <h4>Notes</h4>
+      <form id="noteForm">
+        <fieldset role="group">
+          <input id="noteInput" type="text" placeholder="Add note..." autocomplete="off" />
+          <button type="submit">Add</button>
+        </fieldset>
+      </form>
+      <pick-select>
+        <on condition="{{notes.length > 0}}">
+          <pick-for items="{{notes}}" key="id">
+            <p>{{$item.text}}
+              <pick-action action="removeNote" value="{{$item.id}}"><button type="button">x</button></pick-action>
+            </p>
+          </pick-for>
+        </on>
+        <otherwise><p>No notes yet.</p></otherwise>
+      </pick-select>
+    </section>
+  </div>
+</section>

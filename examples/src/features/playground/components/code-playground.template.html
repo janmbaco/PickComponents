@@ -1,0 +1,26 @@
+<div class="playground">
+  <div class="top-bar">
+    <div class="file-tabs"></div>
+    <div class="actions">
+      <pick-action event="download"
+        ><button class="dl-btn">⬇ {{t.DOWNLOAD}}</button></pick-action
+      >
+      <pick-action event="run"
+        ><button class="run-btn">▶ {{t.RUN}}</button></pick-action
+      >
+      <pick-action event="reset"><button>↺ {{t.RESET}}</button></pick-action>
+    </div>
+  </div>
+  <div class="editor-panel"></div>
+  <div class="preview-panel">
+    <div class="result-bar">
+      <span class="lbl">{{t.RESULT}}</span>
+    </div>
+    <iframe id="preview-frame" sandbox="allow-scripts allow-forms"></iframe>
+    <pick-select>
+      <on condition="{{error !== ''}}">
+        <div class="error-output">{{error}}</div>
+      </on>
+    </pick-select>
+  </div>
+</div>

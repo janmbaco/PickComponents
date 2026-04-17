@@ -1,0 +1,97 @@
+:host {
+  display: block;
+  max-width: 38rem;
+  color: var(--forms-fg, #172033);
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--forms-border, rgba(71, 85, 105, 0.18));
+  border-radius: 1.15rem;
+  background: var(--forms-bg, #ffffff);
+  box-shadow: var(--forms-shadow, none);
+}
+
+header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+h3,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--forms-accent, #15803d);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro,
+.hint,
+.status {
+  color: var(--forms-muted, #475569);
+}
+
+form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+label {
+  font-weight: 700;
+}
+
+.required {
+  color: var(--forms-danger, #dc2626);
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--forms-border, rgba(71, 85, 105, 0.18));
+  border-radius: 0.8rem;
+  background: var(--forms-control-bg, #f8fafc);
+  color: var(--forms-control-fg, #172033);
+  font: inherit;
+}
+
+button {
+  width: fit-content;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--forms-border, rgba(71, 85, 105, 0.18));
+  border-radius: 999px;
+  background: var(--forms-button-bg, #15803d);
+  color: var(--forms-button-fg, #ffffff);
+  font: inherit;
+  font-weight: 800;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+input.touched:invalid {
+  border-color: var(--forms-danger, #dc2626);
+}
+
+input.touched:valid {
+  border-color: var(--forms-success, #16a34a);
+}
+
+.success {
+  display: grid;
+  gap: 0.75rem;
+}

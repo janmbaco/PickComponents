@@ -1,0 +1,67 @@
+:host {
+  display: block;
+  max-width: 48rem;
+  color: var(--api-fg, #0f172a);
+}
+
+.panel,
+.block {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.panel {
+  padding: 1rem;
+  border: 1px solid var(--api-border, rgba(15, 23, 42, 0.14));
+  border-radius: 1rem;
+  background: var(--api-bg, #ffffff);
+  box-shadow: var(--api-shadow, none);
+}
+
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--api-accent, #0891b2);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+input,
+button {
+  border: 1px solid var(--api-border, rgba(15, 23, 42, 0.14));
+  border-radius: 0.75rem;
+  font: inherit;
+}
+
+input {
+  padding: 0.65rem 0.75rem;
+  background: var(--api-control-bg, #f8fafc);
+  color: var(--api-control-fg, #0f172a);
+}
+
+button {
+  width: fit-content;
+  padding: 0.6rem 0.85rem;
+  background: var(--api-button-bg, #0891b2);
+  color: var(--api-button-fg, #ecfeff);
+  font-weight: 800;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}

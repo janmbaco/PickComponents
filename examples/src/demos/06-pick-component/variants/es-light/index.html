@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #f8fafc;
+      }
+
+      pick-profile-example {
+        --pick-component-bg: #ffffff;
+        --pick-component-fg: #0f172a;
+        --pick-component-muted: #475569;
+        --pick-component-border: #cbd5e1;
+        --pick-component-input-bg: #ffffff;
+        --pick-component-input-fg: #0f172a;
+        --pick-component-accent: #2563eb;
+        --pick-component-accent-bg: rgba(37, 99, 235, 0.1);
+        --pick-component-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      await bootstrapFramework(Services);
+      await import("./pick-component.example.js");
+    </script>
+  </head>
+  <body>
+    <pick-profile-example></pick-profile-example>
+  </body>
+</html>

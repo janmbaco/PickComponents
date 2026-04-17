@@ -1,0 +1,12 @@
+{
+  "tabs": [
+    { "file": "pick.example.ts", "label": "Component" },
+    { "file": "pick.template.html", "label": "Template" },
+    { "file": "pick.styles.css", "label": "Styles" },
+    { "file": "services.ts", "label": "Services" },
+    { "file": "main.ts", "label": "Main" },
+    { "file": "index.html", "label": "HTML" }
+  ],
+  "entry": "main.ts",
+  "autoBootstrap": false
+}

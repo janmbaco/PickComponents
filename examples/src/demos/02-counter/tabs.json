@@ -1,0 +1,6 @@
+{
+  "tabs": [
+    { "file": "counter.example.ts", "label": "Component" },
+    { "file": "index.html", "label": "HTML" }
+  ]
+}

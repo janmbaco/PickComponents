@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "pick-component.example.ts", "label": "Componente" },
+    { "file": "pick-component.styles.css", "label": "Estilos" },
+    { "file": "index.html", "label": "Montaje" }
+  ]
+}

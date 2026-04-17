@@ -1,0 +1,14 @@
+{
+  "tabs": [
+    { "file": "dashboard.example.ts", "label": "Component" },
+    { "file": "dashboard.template.html", "label": "Template" },
+    { "file": "dashboard.styles.css", "label": "Styles" },
+    { "file": "dashboard.initializer.ts", "label": "Initializer" },
+    { "file": "services.ts", "label": "Services" },
+    { "file": "container.ts", "label": "Container" },
+    { "file": "main.ts", "label": "Main" },
+    { "file": "index.html", "label": "HTML" }
+  ],
+  "entry": "main.ts",
+  "autoBootstrap": false
+}

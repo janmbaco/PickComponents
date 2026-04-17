@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "bindings.example.ts", "label": "Componente" },
+    { "file": "bindings.styles.css", "label": "Estilos" },
+    { "file": "index.html", "label": "Montaje" }
+  ]
+}

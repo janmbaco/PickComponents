@@ -1,0 +1,6 @@
+{
+  "tabs": [
+    { "file": "hello.example.ts", "label": "Component" },
+    { "file": "index.html", "label": "HTML" }
+  ]
+}

@@ -1,0 +1,292 @@
+:host {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ── Loading skeleton ──────────────────────────────────── */
+
+[data-state="playground-loading"] {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background: var(--pg-editor-bg, #282c34);
+}
+
+.pg-loading-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 36px;
+  margin-left: 2.1rem;
+  gap: 0.7rem;
+}
+
+.pg-loading-spinner {
+  filter: drop-shadow(0 0 3px rgba(188, 196, 208, 0.13));
+}
+
+.pg-loading-label {
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 1.02rem;
+  color: var(--pg-tab-color, #8a919a);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  opacity: 0.85;
+}
+
+.pg-loading-animate {
+  animation: pg-fadein 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 900px) {
+  .pg-loading-row {
+    margin-top: 24px;
+    margin-left: 1.2rem;
+    gap: 0.5rem;
+  }
+  .pg-loading-label {
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 600px) {
+  [data-state="playground-loading"] {
+    align-items: center;
+    justify-content: center;
+  }
+  .pg-loading-row {
+    margin: 0;
+    gap: 0.4rem;
+  }
+}
+
+@keyframes pg-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Container ─────────────────────────────────────────── */
+.playground {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--pg-editor-bg, #282c34);
+}
+
+/* ── Top bar (spans both columns) ──────────────────────── */
+.top-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  background: var(--pg-bar-bg, #1e1e1e);
+  border-bottom: 1px solid var(--pg-border, #3c3c3c);
+  min-height: 36px;
+}
+
+.file-tabs {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  max-width: calc(100% - 180px);
+}
+
+.file-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.85rem;
+  background: transparent;
+  color: var(--pg-tab-color, #8a919a);
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 0.72rem;
+  border: none;
+  border-right: 1px solid var(--pg-border, #3c3c3c);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.file-tab:hover {
+  background: var(--pg-tab-hover, rgba(255, 255, 255, 0.05));
+}
+.file-tab.active {
+  background: var(--pg-editor-bg, #282c34);
+  color: var(--pg-tab-active, #bcc4d0);
+}
+.file-tab .file-icon {
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+.file-tab .icon-ts {
+  color: #3178c6;
+}
+.file-tab .icon-html {
+  color: #e44d26;
+}
+.file-tab .icon-css {
+  color: #264de4;
+}
+
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0 0.5rem;
+}
+.actions button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  color: var(--pg-action-color, #9da5b4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  font-family: system-ui, sans-serif;
+}
+.actions button:hover {
+  background: var(--pg-action-hover-bg, #333842);
+  color: var(--pg-action-hover-color, #e5e9f0);
+}
+.actions .run-btn {
+  color: #98c379;
+  font-weight: 600;
+}
+.actions .run-btn:hover {
+  background: rgba(152, 195, 121, 0.15);
+  color: #b5e890;
+}
+.actions .dl-btn {
+  color: #61afef;
+}
+.actions .dl-btn:hover {
+  background: rgba(97, 175, 239, 0.15);
+  color: #8ac6f5;
+}
+
+/* ── Editor panel ──────────────────────────────────────── */
+.editor-panel {
+  background: var(--pg-editor-bg, #282c34);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.editor-wrap {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.editor-wrap.active {
+  display: flex;
+}
+.editor-wrap .cm-editor {
+  height: 100%;
+}
+.editor-panel .cm-scroller {
+  overflow: auto;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.editor-panel .cm-gutters {
+  border-right: 1px solid var(--pg-border, #3c3c3c);
+}
+
+/* ── Preview panel ─────────────────────────────────────── */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--pg-result-bg, #fff);
+  border-left: 1px solid var(--pg-border, #3c3c3c);
+  min-width: 0;
+  min-height: 0;
+}
+
+.result-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  background: var(--pg-bar-bg, #1e1e1e);
+  border-bottom: 1px solid var(--pg-border, #3c3c3c);
+  min-height: 28px;
+}
+.result-bar .lbl {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--pg-result-lbl, #8a919a);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  min-height: 0;
+  background: var(--pg-result-bg, #fff);
+}
+
+.error-output {
+  color: #e06c75;
+  background: #2c1a1a;
+  padding: 0.5rem 0.75rem;
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 100px;
+  overflow: auto;
+  border-top: 1px solid #5c2020;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .playground {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    min-height: 500px;
+  }
+  .top-bar {
+    grid-column: 1;
+  }
+  .preview-panel {
+    border-left: none;
+    border-top: 1px solid var(--pg-border, #3c3c3c);
+  }
+}
+
+/* En code-playground.styles.css */
+[data-state="playground-loading"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background: var(--pg-editor-bg, #282c34);
+}

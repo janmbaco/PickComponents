@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Browser Ready Smoke</title>
+  </head>
+  <body>
+    <div id="status">pending</div>
+
+    <script type="module">
+      const status = document.getElementById("status");
+
+      try {
+        const [pickComponents, pickBootstrap] = await Promise.all([
+          import("../../../dist/browser/pick-components.js"),
+          import("../../../dist/browser/pick-components-bootstrap.js"),
+        ]);
+
+        await pickComponents.bootstrapFramework(pickComponents.Services);
+
+        const mainEntryLoaded =
+          typeof pickComponents.bootstrapFramework === "function" &&
+          typeof pickComponents.Pick === "function";
+        const bootstrapEntryLoaded =
+          typeof pickBootstrap.bootstrapFramework === "function" &&
+          typeof pickBootstrap.Services === "object";
+
+        if (!mainEntryLoaded || !bootstrapEntryLoaded) {
+          throw new Error("Browser-ready distribution exports are incomplete");
+        }
+
+        status.textContent = "ready";
+      } catch (error) {
+        status.textContent =
+          error instanceof Error ? error.message : String(error);
+      }
+    </script>
+  </body>
+</html>

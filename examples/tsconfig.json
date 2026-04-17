@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "paths": {
+      "injectkit": ["../../InjectKit/src/index.ts"],
+      "pick-components": ["../src/index.ts"],
+      "pick-components/bootstrap": ["../src/bootstrap.ts"]
+    }
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["../node_modules", "./playground-examples"]
+}

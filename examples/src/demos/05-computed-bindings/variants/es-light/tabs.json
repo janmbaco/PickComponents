@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "computed.example.ts", "label": "Componente" },
+    { "file": "computed.styles.css", "label": "Estilos" },
+    { "file": "index.html", "label": "Montaje" }
+  ]
+}

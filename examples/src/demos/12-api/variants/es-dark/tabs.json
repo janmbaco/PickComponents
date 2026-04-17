@@ -1,0 +1,14 @@
+{
+  "tabs": [
+    { "file": "api.example.ts", "label": "Componente" },
+    { "file": "api.template.html", "label": "Plantilla" },
+    { "file": "api.styles.css", "label": "Estilos" },
+    { "file": "api.initializer.ts", "label": "Inicializador" },
+    { "file": "api.lifecycle.ts", "label": "Ciclo de vida" },
+    { "file": "services.ts", "label": "Servicios" },
+    { "file": "main.ts", "label": "Arranque" },
+    { "file": "index.html", "label": "HTML" }
+  ],
+  "entry": "main.ts",
+  "autoBootstrap": false
+}

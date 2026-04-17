@@ -1,0 +1,26 @@
+# Exclude from npm package
+node_modules/
+src/
+examples/
+test-results/
+playwright-report/
+
+# Config files
+.editorconfig
+.gitignore
+.npmignore
+tsconfig.json
+playwright.config.ts
+scripts/
+
+# Documentation (keep only README.md and LICENSE)
+ARCHITECTURE.md
+PHILOSOPHY.md
+README-OLD.md
+DEVTOOLS-BUILD-COMPLETE.md
+loquesea.md
+docs/
+
+# Development files
+*.log
+.DS_Store

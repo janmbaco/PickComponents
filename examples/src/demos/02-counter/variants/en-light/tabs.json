@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "counter.example.ts", "label": "Component" },
+    { "file": "counter.styles.css", "label": "Styles" },
+    { "file": "index.html", "label": "HTML" }
+  ]
+}

@@ -1,0 +1,32 @@
+:host {
+  display: block;
+  max-width: 42rem;
+  color: var(--di-fg, #0f172a);
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--di-border, rgba(15, 23, 42, 0.14));
+  border-radius: 1rem;
+  background: var(--di-bg, #ffffff);
+  box-shadow: var(--di-shadow, none);
+}
+
+h3,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--di-accent, #2563eb);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro {
+  color: var(--di-muted, #475569);
+}

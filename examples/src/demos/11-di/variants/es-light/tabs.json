@@ -1,0 +1,14 @@
+{
+  "tabs": [
+    { "file": "di.example.ts", "label": "Componente" },
+    { "file": "di.template.html", "label": "Plantilla" },
+    { "file": "di.styles.css", "label": "Estilos" },
+    { "file": "users.initializer.ts", "label": "Inicializador" },
+    { "file": "services.ts", "label": "Servicios" },
+    { "file": "container.ts", "label": "Contenedor" },
+    { "file": "main.ts", "label": "Arranque" },
+    { "file": "index.html", "label": "HTML" }
+  ],
+  "entry": "main.ts",
+  "autoBootstrap": false
+}

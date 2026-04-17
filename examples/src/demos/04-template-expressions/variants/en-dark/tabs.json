@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "expressions.example.ts", "label": "Component" },
+    { "file": "expressions.styles.css", "label": "Styles" },
+    { "file": "index.html", "label": "HTML" }
+  ]
+}

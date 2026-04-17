@@ -1,0 +1,39 @@
+:host {
+  display: block;
+  max-width: 42rem;
+  color: var(--pick-fg, #0f172a);
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--pick-border, rgba(15, 23, 42, 0.14));
+  border-radius: 1rem;
+  background: var(--pick-bg, #ffffff);
+  box-shadow: var(--pick-shadow, none);
+}
+
+h3,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--pick-accent, #7c3aed);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+button {
+  width: fit-content;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--pick-border, rgba(15, 23, 42, 0.14));
+  border-radius: 999px;
+  background: var(--pick-button-bg, #7c3aed);
+  color: var(--pick-button-fg, #faf5ff);
+  font: inherit;
+  font-weight: 800;
+}

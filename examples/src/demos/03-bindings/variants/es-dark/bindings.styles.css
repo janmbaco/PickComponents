@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  max-width: 24rem;
+  color: var(--bindings-fg, #e5eefb);
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--bindings-border, rgba(148, 163, 184, 0.35));
+  border-radius: 1rem;
+  background: var(--bindings-bg, #1e293b);
+  box-shadow: var(--bindings-shadow, none);
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--bindings-muted, #cbd5e1);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--bindings-border, rgba(148, 163, 184, 0.35));
+  border-radius: 0.7rem;
+  background: var(--bindings-input-bg, #0f172a);
+  color: var(--bindings-input-fg, #e5eefb);
+  font: inherit;
+}
+
+p {
+  margin: 0;
+}
+
+.output {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
+}

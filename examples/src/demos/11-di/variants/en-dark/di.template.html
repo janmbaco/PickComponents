@@ -1,0 +1,14 @@
+<section class="panel">
+  <p class="eyebrow">Architecture</p>
+  <h3>Dependency Injection</h3>
+  <p class="intro">
+    The component asks for an initializer by token. InjectKit builds that
+    initializer with <code>UserService</code> and <code>HttpClient</code>.
+  </p>
+
+  <p><strong>{{userCount}}</strong> users via InjectKit -> UserService -> HttpClient</p>
+
+  <pick-for items="{{users}}" key="id">
+    <p><strong>{{$item.name}}</strong> · {{$item.email}}</p>
+  </pick-for>
+</section>

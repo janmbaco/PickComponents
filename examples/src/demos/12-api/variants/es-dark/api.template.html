@@ -1,0 +1,33 @@
+<section class="panel">
+  <p class="eyebrow">Ciclo de vida</p>
+  <h3>Integración con API</h3>
+
+  <section class="block">
+    <h4>Usuarios</h4>
+    <input id="searchInput" type="search" placeholder="Buscar usuario..." />
+
+    <pick-for items="{{filteredUsers}}" key="id">
+      <p><strong>{{$item.name}}</strong> @{{$item.username}} · {{$item.email}}</p>
+    </pick-for>
+  </section>
+
+  <section class="block">
+    <h4>Galería de perros</h4>
+    <pick-select>
+      <on condition="{{dogsLoading}}">
+        <p aria-busy="true">Cargando imágenes...</p>
+      </on>
+      <on condition="{{dogImages.length > 0}}">
+        <div class="gallery">
+          <pick-for items="{{dogImages}}">
+            <img src="{{$item}}" alt="Perro" loading="lazy" />
+          </pick-for>
+        </div>
+        <pick-action action="requestDogImages"><button>Cargar más</button></pick-action>
+      </on>
+      <otherwise>
+        <pick-action action="requestDogImages"><button>Cargar imágenes</button></pick-action>
+      </otherwise>
+    </pick-select>
+  </section>
+</section>

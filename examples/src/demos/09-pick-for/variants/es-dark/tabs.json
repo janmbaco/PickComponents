@@ -1,0 +1,6 @@
+{
+  "tabs": [
+    { "file": "pick-for.example.ts", "label": "Componente" },
+    { "file": "index.html", "label": "Montaje" }
+  ]
+}

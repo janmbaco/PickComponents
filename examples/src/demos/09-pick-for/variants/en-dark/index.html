@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      await bootstrapFramework(Services);
+      await import("./pick-for.example.js");
+    </script>
+  </head>
+  <body>
+    <pick-for-example></pick-for-example>
+  </body>
+</html>

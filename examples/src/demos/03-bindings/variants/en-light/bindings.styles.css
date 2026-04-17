@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  max-width: 24rem;
+  color: var(--bindings-fg, #0f172a);
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--bindings-border, #cbd5e1);
+  border-radius: 1rem;
+  background: var(--bindings-bg, #ffffff);
+  box-shadow: var(--bindings-shadow, none);
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--bindings-muted, #475569);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--bindings-border, #cbd5e1);
+  border-radius: 0.7rem;
+  background: var(--bindings-input-bg, #ffffff);
+  color: var(--bindings-input-fg, #0f172a);
+  font: inherit;
+}
+
+p {
+  margin: 0;
+}
+
+.output {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
+}

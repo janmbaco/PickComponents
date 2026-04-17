@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #f8fafc;
+      }
+
+      computed-bindings-example {
+        --computed-bg: #ffffff;
+        --computed-fg: #0f172a;
+        --computed-muted: #475569;
+        --computed-border: #cbd5e1;
+        --computed-input-bg: #ffffff;
+        --computed-input-fg: #0f172a;
+        --computed-accent: #2563eb;
+        --computed-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      import "./computed.example.js";
+      await bootstrapFramework(Services);
+    </script>
+  </head>
+  <body>
+    <computed-bindings-example></computed-bindings-example>
+  </body>
+</html>
