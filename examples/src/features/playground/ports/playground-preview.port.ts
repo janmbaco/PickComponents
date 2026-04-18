@@ -11,15 +11,37 @@ export interface IPlaygroundPreviewPort {
     locale: string,
     theme: "light" | "dark",
     autoBootstrap: boolean,
-  ): string;
+  ): Promise<string>;
+}
+
+const VENDOR_PATHS: Record<string, string> = {
+  "pick-components": "/vendor/pick-components.js",
+  "pick-components/bootstrap": "/vendor/pick-components-bootstrap.js",
+  injectkit: "/vendor/injectkit.js",
+};
+
+async function loadVendorDataUrls(): Promise<Record<string, string>> {
+  const entries = await Promise.all(
+    Object.entries(VENDOR_PATHS).map(async ([name, path]) => {
+      const text = await fetch(path).then((r) => r.text());
+      return [name, `data:text/javascript;charset=utf-8,${encodeURIComponent(text)}`] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
 }
 
 export class BrowserPlaygroundPreviewPort implements IPlaygroundPreviewPort {
+  private readonly _vendorReady: Promise<Record<string, string>>;
+
+  constructor() {
+    this._vendorReady = loadVendorDataUrls();
+  }
+
   buildPlaceholderSrcdoc(theme: "light" | "dark"): string {
     return buildPlaceholderSrcdoc(theme);
   }
 
-  buildMultiSrcdoc(
+  async buildMultiSrcdoc(
     modules: Map<string, string>,
     stylesheets: Map<string, string>,
     entryFile: string,
@@ -28,7 +50,8 @@ export class BrowserPlaygroundPreviewPort implements IPlaygroundPreviewPort {
     locale: string,
     theme: "light" | "dark",
     autoBootstrap: boolean,
-  ): string {
+  ): Promise<string> {
+    const vendorUrls = await this._vendorReady;
     return buildSrcdocMulti(
       modules,
       stylesheets,
@@ -38,6 +61,7 @@ export class BrowserPlaygroundPreviewPort implements IPlaygroundPreviewPort {
       locale,
       theme,
       autoBootstrap,
+      vendorUrls,
     );
   }
 }
@@ -84,6 +108,7 @@ function buildSrcdocMulti(
   locale: string,
   theme: "light" | "dark",
   autoBootstrap: boolean,
+  vendorUrls: Record<string, string>,
 ): string {
   const injectedHtml = injectLocale(htmlContent, locale);
   const injectedHead = sanitizePreviewHeadContent(htmlHeadContent);
@@ -94,11 +119,7 @@ function buildSrcdocMulti(
     )
     .join("\n");
 
-  const importMap: Record<string, string> = {
-    "pick-components": "/vendor/pick-components.js",
-    "pick-components/bootstrap": "/vendor/pick-components-bootstrap.js",
-    injectkit: "/vendor/injectkit.js",
-  };
+  const importMap: Record<string, string> = { ...vendorUrls };
 
   const localFiles = new Set([...modules.keys(), ...stylesheets.keys()]);
 

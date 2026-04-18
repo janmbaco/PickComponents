@@ -38,7 +38,7 @@ export class CodePlaygroundLifecycle extends PickLifecycleManager<CodePlayground
         if (!component.hasHydratedSession()) {
           return;
         }
-        this.runPlayground(component);
+        void this.runPlayground(component);
       }),
     );
 
@@ -63,20 +63,20 @@ export class CodePlaygroundLifecycle extends PickLifecycleManager<CodePlayground
           }
 
           component.setPrimaryTypeScriptCode(code);
-          this.runPlayground(component);
+          void this.runPlayground(component);
         }),
     );
 
     this.addSubscription(
       component.getPropertyObservable("runRequestVersion").subscribe(() => {
-        this.runPlayground(component);
+        void this.runPlayground(component);
       }),
     );
 
     this.addSubscription(
       component.getPropertyObservable("resetRequestVersion").subscribe(() => {
         component.restoreInitialCode();
-        this.runPlayground(component);
+        void this.runPlayground(component);
       }),
     );
 
@@ -92,7 +92,7 @@ export class CodePlaygroundLifecycle extends PickLifecycleManager<CodePlayground
       this.hostPort.observeThemeChanges(() => {
         const theme = this.hostPort.readEditorTheme();
         component.reconfigureEditorTheme(theme);
-        this.runPlayground(component);
+        void this.runPlayground(component);
       }),
     );
   }
@@ -134,7 +134,7 @@ export class CodePlaygroundLifecycle extends PickLifecycleManager<CodePlayground
     }
   }
 
-  private runPlayground(component: CodePlayground): void {
+  private async runPlayground(component: CodePlayground): Promise<void> {
     const session = component.getSession();
     if (!session) {
       return;
@@ -144,7 +144,7 @@ export class CodePlaygroundLifecycle extends PickLifecycleManager<CodePlayground
 
     try {
       component.renderPreview(
-        buildCodePlaygroundPreviewDocument(
+        await buildCodePlaygroundPreviewDocument(
           session,
           component.snapshotTabs(),
           component.resolveLocale(),

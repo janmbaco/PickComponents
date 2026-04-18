@@ -6,14 +6,14 @@ import {
 import type { IPlaygroundPreviewPort } from "../ports/playground-preview.port.js";
 import type { ITypeScriptTranspilerPort } from "../ports/typescript-transpiler.port.js";
 
-export function buildCodePlaygroundPreviewDocument(
+export async function buildCodePlaygroundPreviewDocument(
   session: CodePlaygroundSessionState,
   tabs: CodePlaygroundTabSnapshot[],
   locale: string,
   theme: "light" | "dark",
   transpilerPort: ITypeScriptTranspilerPort,
   previewPort: IPlaygroundPreviewPort,
-): string {
+): Promise<string> {
   const modules = new Map<string, string>();
   const stylesheets = new Map<string, string>();
   const documentTab =
@@ -48,7 +48,7 @@ export function buildCodePlaygroundPreviewDocument(
   );
   const entryJs = session.entryFile.replace(/\.ts$/, ".js");
 
-  return previewPort.buildMultiSrcdoc(
+  return await previewPort.buildMultiSrcdoc(
     modules,
     stylesheets,
     entryJs,
