@@ -62,6 +62,19 @@ export class MockDomContext implements IDomContext {
     this.isRendered = true;
   }
 
+  adoptElement(element: HTMLElement, contentType: DomContentType): void {
+    this.methodCalls.push({
+      method: "adoptElement",
+      args: [element, contentType],
+    });
+    if (!element) throw new Error("Element is required");
+    if (!contentType) throw new Error("Content type is required");
+
+    this.element = element;
+    this.contentType = contentType;
+    this.isRendered = true;
+  }
+
   getIsRendered(): boolean {
     this.methodCalls.push({ method: "getIsRendered", args: [] });
     return this.isRendered;

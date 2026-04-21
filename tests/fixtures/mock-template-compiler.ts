@@ -17,6 +17,13 @@ export class MockTemplateCompiler implements ITemplateCompiler {
     domContext: IDomContext;
     metadata?: ComponentMetadata;
   }> = [];
+  public adoptExistingCalls: Array<{
+    template: string;
+    existingRoot: HTMLElement;
+    component: PickComponent;
+    domContext: IDomContext;
+    metadata?: ComponentMetadata;
+  }> = [];
 
   async compile(
     template: string,
@@ -46,12 +53,35 @@ export class MockTemplateCompiler implements ITemplateCompiler {
     return mockElement;
   }
 
+  async adoptExisting(
+    template: string,
+    existingRoot: HTMLElement,
+    component: PickComponent,
+    domContext: IDomContext,
+    metadata?: ComponentMetadata,
+  ): Promise<HTMLElement> {
+    this.adoptExistingCalls.push({
+      template,
+      existingRoot,
+      component,
+      domContext,
+      metadata,
+    });
+
+    return existingRoot;
+  }
+
   reset(): void {
     this.compileCalls = [];
+    this.adoptExistingCalls = [];
   }
 
   getCompileCount(): number {
     return this.compileCalls.length;
+  }
+
+  getAdoptExistingCount(): number {
+    return this.adoptExistingCalls.length;
   }
 
   wasTemplateCompiled(template: string): boolean {

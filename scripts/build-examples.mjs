@@ -54,3 +54,5 @@ try {
 } catch {
   console.warn("⚠️  Pico CSS not found — run npm install");
 }
+
+await import("./prerender-examples.mjs");

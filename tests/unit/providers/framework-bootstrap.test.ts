@@ -76,6 +76,9 @@ test.describe("bootstrapFramework", () => {
     const expectedTokens = [
       "IDecoratorMode",
       "IDomAdapter",
+      "INavigationService",
+      "ISharedStylesRegistry",
+      "IPrerenderAdoptionDecider",
       "ISkeletonValidator",
       "ISkeletonRenderer",
       "IComponentMetadataRegistry",

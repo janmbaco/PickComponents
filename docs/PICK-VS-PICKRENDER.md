@@ -658,4 +658,4 @@ If the team can read it comfortably in either form, either form is fine. Keep co
 
 - DI guide: [DEPENDENCY-INJECTION.md](DEPENDENCY-INJECTION.md)
 - Rendering internals: [RENDERING-ARCHITECTURE.md](RENDERING-ARCHITECTURE.md)
-- Spanish version: [SMART-VS-SMARTRENDER.es.md](SMART-VS-SMARTRENDER.es.md)
+- Spanish version: [PICK-VS-PICKRENDER.es.md](PICK-VS-PICKRENDER.es.md)

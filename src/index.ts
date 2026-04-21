@@ -63,6 +63,24 @@ export { SharedStylesRegistry } from "./rendering/styles/shared-styles-registry.
 export type { ISharedStylesRegistry } from "./rendering/styles/shared-styles-registry.js";
 // ScopeStack and fragment AST path removed from public API
 
+// Prerender/SSR compatibility exports
+export {
+  DefaultPrerenderAdoptionDecider,
+  PICK_PRERENDER_ATTRIBUTES,
+  PICK_PRERENDER_CONTRACT_VERSION,
+  computePickTemplateHash,
+  isLightDomPrerenderCandidate,
+  readPrerenderAdoptionCandidate,
+} from "./ssr/prerender-manifest.js";
+export type {
+  ClientRenderMode,
+  IPrerenderAdoptionDecider,
+  PickRootMode,
+  PrerenderAdoptionCandidate,
+  PrerenderAdoptionDecision,
+  PrerenderAdoptionRequest,
+} from "./ssr/prerender-manifest.js";
+
 // Core components exports
 export { PickSelectElement } from "./components/pick-select/pick-select-element.js";
 export { PickLinkElement } from "./components/pick-link/pick-link-element.js";

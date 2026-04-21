@@ -33,13 +33,28 @@ export class BrowserPlaygroundRoutingPort implements IPlaygroundRoutingPort {
       return () => {};
     }
 
-    const onRouteChange = (event: Event): void => {
-      const detail = (event as CustomEvent<{ path?: string }>).detail;
-      listener(detail?.path ?? window.location.pathname);
+    let lastPath = window.location.pathname;
+    const notify = (path: string): void => {
+      if (path === lastPath) {
+        return;
+      }
+
+      lastPath = path;
+      listener(path);
     };
 
-    document.addEventListener("route-change", onRouteChange);
+    const onRouteChange = (event: Event): void => {
+      const detail = (event as CustomEvent<{ path?: string }>).detail;
+      notify(detail?.path ?? window.location.pathname);
+    };
+    const onPopState = (): void => notify(window.location.pathname);
 
-    return () => document.removeEventListener("route-change", onRouteChange);
+    document.addEventListener("route-change", onRouteChange);
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      document.removeEventListener("route-change", onRouteChange);
+      window.removeEventListener("popstate", onPopState);
+    };
   }
 }

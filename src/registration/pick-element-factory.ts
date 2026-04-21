@@ -17,14 +17,16 @@ import type {
   PickViewActions,
 } from "../components/pick-action/pick-action-element.js";
 import { ensureReactiveProperties } from "../decorators/reactive.decorator.js";
+import {
+  isLightDomPrerenderCandidate,
+  readPrerenderAdoptionCandidate,
+} from "../ssr/prerender-manifest.js";
 
 /**
  * Defines the responsibility of configuring a pick element registration.
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export interface PickElementOptions<
-  _T extends PickComponent = PickComponent,
-> {
+export interface PickElementOptions<_T extends PickComponent = PickComponent> {
   /** Factory function that creates the component initializer */
   initializer?: InitializerFactory;
   /** Factory function that creates the lifecycle manager */
@@ -207,6 +209,9 @@ export class PickElementFactory implements IPickElementFactory {
         });
 
         const componentId = this.tagName.toLowerCase();
+        const prerenderCandidate = readPrerenderAdoptionCandidate(this);
+        const shouldAttemptLightDomAdoption =
+          isLightDomPrerenderCandidate(prerenderCandidate);
         const restrictiveParent = getRestrictiveParentElement(this);
         const targetRoot =
           restrictiveParent ??
@@ -230,6 +235,13 @@ export class PickElementFactory implements IPickElementFactory {
             component: this.component,
             targetRoot,
             hostElement: this,
+            boot: shouldAttemptLightDomAdoption
+              ? {
+                  mode: "adopt",
+                  prerenderCandidate,
+                  rootMode: "light",
+                }
+              : undefined,
           });
           this.renderResult = result;
         } catch (error) {

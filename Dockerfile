@@ -32,6 +32,10 @@ COPY --from=builder /build/examples/vendor/ /usr/share/nginx/html/vendor/
 # Playground example source files
 COPY --from=builder /build/examples/playground-examples/ /usr/share/nginx/html/playground-examples/
 
+# SEO prerendered public routes
+COPY --from=builder /build/examples/es/ /usr/share/nginx/html/es/
+COPY --from=builder /build/examples/en/ /usr/share/nginx/html/en/
+
 COPY examples/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080

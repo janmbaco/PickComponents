@@ -84,6 +84,20 @@ export interface IDomContext {
   setElement(element: HTMLElement, contentType: DomContentType): void;
 
   /**
+   * Adopts an existing HTML element as the root without clearing or moving it.
+   *
+   * @param element - Existing HTML element to use as root
+   * @param contentType - The type of content being adopted
+   * @throws Error if element or contentType are null/undefined
+   *
+   * @example
+   * ```typescript
+   * domContext.adoptElement(serverRenderedElement, DomContentType.COMPONENT);
+   * ```
+   */
+  adoptElement(element: HTMLElement, contentType: DomContentType): void;
+
+  /**
    * Checks if the DOM has been rendered.
    *
    * @returns true if rendered, false otherwise

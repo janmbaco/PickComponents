@@ -1,5 +1,5 @@
 import { createServer } from "http";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join, extname } from "path";
 import { fileURLToPath } from "url";
 
@@ -20,11 +20,9 @@ const mimeTypes = {
 };
 
 const server = createServer((req, res) => {
-  const requestPath = req.url ?? "/";
-  const filePath = join(
-    examplesDir,
-    requestPath === "/" ? "index.html" : requestPath,
-  );
+  const requestUrl = new URL(req.url || "/", "http://localhost");
+  const pathname = decodeURIComponent(requestUrl.pathname);
+  const filePath = resolveRequestFile(pathname);
   const ext = extname(filePath);
   const contentType = mimeTypes[ext] || "application/octet-stream";
 
@@ -37,7 +35,7 @@ const server = createServer((req, res) => {
     res.end(content, "utf-8");
   } catch (error) {
     if (error.code === "ENOENT") {
-      if (!ext) {
+      if (!extname(pathname)) {
         try {
           const indexContent = readFileSync(join(examplesDir, "index.html"));
           res.writeHead(200, {
@@ -59,6 +57,26 @@ const server = createServer((req, res) => {
     }
   }
 });
+
+function resolveRequestFile(pathname) {
+  if (pathname === "/") {
+    return join(examplesDir, "index.html");
+  }
+
+  const directPath = join(examplesDir, pathname);
+  const ext = extname(pathname);
+
+  if (ext) {
+    return directPath;
+  }
+
+  const indexPath = join(directPath, "index.html");
+  if (existsSync(indexPath)) {
+    return indexPath;
+  }
+
+  return directPath;
+}
 
 const PORT = 8080;
 server.listen(PORT, () => {

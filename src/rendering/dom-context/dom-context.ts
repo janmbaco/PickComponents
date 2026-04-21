@@ -32,6 +32,7 @@ export class DomContext implements IDomContext {
   private subscriptions: Unsubscribe[] = [];
   private isRendered = false;
   private contentType = DomContentType.NONE;
+  private ownsElement = false;
 
   /**
    * Initializes a new instance of DomContext.
@@ -96,6 +97,31 @@ export class DomContext implements IDomContext {
     this.targetRoot.innerHTML = "";
     this.targetRoot.appendChild(element);
     this.htmlElement = element;
+    this.ownsElement = true;
+    this.isRendered = true;
+    this.contentType = contentType;
+  }
+
+  /**
+   * Adopts an existing HTML element as the root without clearing the target root.
+   *
+   * @param element - Existing HTML element to use as root
+   * @param contentType - The type of content being adopted
+   * @throws Error if element or contentType are null/undefined
+   *
+   * @example
+   * ```typescript
+   * domContext.adoptElement(serverRenderedElement, DomContentType.COMPONENT);
+   * ```
+   */
+  adoptElement(element: HTMLElement, contentType: DomContentType): void {
+    if (!element) throw new Error("Element is required");
+    if (!contentType) throw new Error("Content type is required");
+    if (element.parentNode !== this.targetRoot) {
+      this.targetRoot.appendChild(element);
+    }
+    this.htmlElement = element;
+    this.ownsElement = false;
     this.isRendered = true;
     this.contentType = contentType;
   }
@@ -220,11 +246,12 @@ export class DomContext implements IDomContext {
   destroy(): void {
     this.clearSubscriptions();
 
-    if (this.htmlElement) {
+    if (this.htmlElement && this.ownsElement) {
       this.htmlElement.remove();
-      this.htmlElement = null;
     }
 
+    this.htmlElement = null;
+    this.ownsElement = false;
     this.isRendered = false;
     this.contentType = DomContentType.NONE;
   }
@@ -253,6 +280,7 @@ export class AnchoredDomContext implements IDomContext {
   private subscriptions: Unsubscribe[] = [];
   private isRendered = false;
   private contentType = DomContentType.NONE;
+  private ownsElement = false;
 
   /**
    * Initializes a new instance of AnchoredDomContext.
@@ -322,12 +350,31 @@ export class AnchoredDomContext implements IDomContext {
     if (!element) throw new Error("Element is required");
     if (!contentType) throw new Error("Content type is required");
 
-    if (this.htmlElement && this.htmlElement.parentNode) {
+    if (this.htmlElement && this.ownsElement && this.htmlElement.parentNode) {
       this.htmlElement.parentNode.removeChild(this.htmlElement);
     }
 
     this.transparentHost.insert(element);
     this.htmlElement = element;
+    this.ownsElement = true;
+    this.isRendered = true;
+    this.contentType = contentType;
+  }
+
+  /**
+   * Adopts an existing anchored element as the root without moving it.
+   *
+   * @param element - Existing HTML element to use as root
+   * @param contentType - The type of content being adopted
+   * @returns Nothing
+   * @throws Error if any parameter is null or undefined
+   */
+  adoptElement(element: HTMLElement, contentType: DomContentType): void {
+    if (!element) throw new Error("Element is required");
+    if (!contentType) throw new Error("Content type is required");
+
+    this.htmlElement = element;
+    this.ownsElement = false;
     this.isRendered = true;
     this.contentType = contentType;
   }
@@ -451,11 +498,12 @@ export class AnchoredDomContext implements IDomContext {
   destroy(): void {
     this.clearSubscriptions();
 
-    if (this.htmlElement) {
+    if (this.htmlElement && this.ownsElement) {
       this.htmlElement.remove();
-      this.htmlElement = null;
     }
 
+    this.htmlElement = null;
+    this.ownsElement = false;
     this.transparentHost.disconnect();
     this.isRendered = false;
     this.contentType = DomContentType.NONE;

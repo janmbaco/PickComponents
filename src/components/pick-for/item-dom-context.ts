@@ -30,6 +30,10 @@ export class ItemDomContext implements IDomContext {
     this.element = element;
   }
 
+  adoptElement(element: HTMLElement): void {
+    this.element = element;
+  }
+
   getIsRendered(): boolean {
     return Boolean(this.element);
   }

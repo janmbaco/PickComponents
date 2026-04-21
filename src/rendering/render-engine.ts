@@ -12,6 +12,25 @@ import type { TemplateCompilationCache } from "./templates/template-compilation-
 import { getRestrictiveParentElement } from "./dom/restrictive-html-context.js";
 import { ensureReactiveProperties } from "../decorators/reactive.decorator.js";
 import type { IErrorRenderer } from "./pipeline/error-renderer.js";
+import {
+  DefaultPrerenderAdoptionDecider,
+  type ClientRenderMode,
+  type IPrerenderAdoptionDecider,
+  type PickRootMode,
+  type PrerenderAdoptionCandidate,
+  type PrerenderAdoptionDecision,
+} from "../ssr/prerender-manifest.js";
+
+export interface ClientBootOptions {
+  /** Client first-render strategy. Defaults to replace. */
+  mode?: ClientRenderMode;
+  /** Parsed prerender metadata for an existing DOM root, when available. */
+  prerenderCandidate?: PrerenderAdoptionCandidate | null;
+  /** Expected DOM root mode for the prerendered markup. Defaults to shadow. */
+  rootMode?: PickRootMode;
+  /** Log adoption fallback reasons to the console. */
+  debug?: boolean;
+}
 
 /**
  * Defines the responsibility of configuring render operations for Pick Components.
@@ -36,6 +55,8 @@ export interface RenderOptions<T extends PickComponent> {
   targetRoot: HTMLElement | ShadowRoot;
   /** The custom element itself (for host projection content) */
   hostElement?: HTMLElement;
+  /** Optional first-boot strategy for prerendered HTML. */
+  boot?: ClientBootOptions;
 }
 
 /**
@@ -189,6 +210,7 @@ export class RenderEngine implements IRenderEngine {
     private readonly templateProvider: ITemplateProvider,
     private readonly instanceRegistry: IComponentInstanceRegistry,
     private readonly metadataSource: IComponentMetadataRegistry,
+    private readonly prerenderAdoptionDecider: IPrerenderAdoptionDecider = new DefaultPrerenderAdoptionDecider(),
   ) {
     if (!skeletonRenderer) throw new Error("SkeletonRenderer is required");
     if (!errorRenderer) throw new Error("ErrorRenderer is required");
@@ -199,6 +221,9 @@ export class RenderEngine implements IRenderEngine {
     if (!templateProvider) throw new Error("TemplateProvider is required");
     if (!instanceRegistry) throw new Error("InstanceRegistry is required");
     if (!metadataSource) throw new Error("MetadataSource is required");
+    if (!prerenderAdoptionDecider) {
+      throw new Error("PrerenderAdoptionDecider is required");
+    }
   }
 
   // ============================================================================
@@ -270,22 +295,27 @@ export class RenderEngine implements IRenderEngine {
     ensureReactiveProperties(instance);
 
     try {
-      // 4. Inject component styles into Shadow Root before skeleton so skeleton
-      // content can use component CSS classes and custom properties.
-      const skeletonTargetRoot = domContext.getTargetRoot();
-      if (
-        metadata.styles &&
-        typeof ShadowRoot !== "undefined" &&
-        skeletonTargetRoot instanceof ShadowRoot
-      ) {
-        const styleEl = skeletonTargetRoot.ownerDocument.createElement("style");
-        styleEl.setAttribute("data-skeleton-styles", "true");
-        styleEl.textContent = metadata.styles;
-        skeletonTargetRoot.prepend(styleEl);
-      }
+      const wantsAdoption = options.boot?.mode === "adopt";
 
-      // 5. Render skeleton before the main template is compiled.
-      await this.skeletonRenderer.render(instance, metadata, domContext);
+      if (!wantsAdoption) {
+        // 4. Inject component styles into Shadow Root before skeleton so skeleton
+        // content can use component CSS classes and custom properties.
+        const skeletonTargetRoot = domContext.getTargetRoot();
+        if (
+          metadata.styles &&
+          typeof ShadowRoot !== "undefined" &&
+          skeletonTargetRoot instanceof ShadowRoot
+        ) {
+          const styleEl =
+            skeletonTargetRoot.ownerDocument.createElement("style");
+          styleEl.setAttribute("data-skeleton-styles", "true");
+          styleEl.textContent = metadata.styles;
+          skeletonTargetRoot.prepend(styleEl);
+        }
+
+        // 5. Render skeleton before the main template is compiled.
+        await this.skeletonRenderer.render(instance, metadata, domContext);
+      }
 
       // 5. Initialize component state BEFORE resolving [[RULES.*]].
       const wasInitialized = await this.initializeComponent(
@@ -317,6 +347,24 @@ export class RenderEngine implements IRenderEngine {
         resolvedTemplate,
         this.templateAnalyzer,
       );
+      const adoptionDecision = wantsAdoption
+        ? this.prerenderAdoptionDecider.decide({
+            candidate: options.boot?.prerenderCandidate ?? null,
+            metadata,
+            templateSource: resolvedTemplate,
+            expectedRootMode: options.boot?.rootMode ?? "shadow",
+          })
+        : null;
+
+      if (
+        adoptionDecision &&
+        adoptionDecision.mode === "replace" &&
+        options.boot?.debug
+      ) {
+        console.debug(
+          `[Pick Components] Prerender adoption skipped for <${metadata.selector}>: ${adoptionDecision.reason}`,
+        );
+      }
 
       // 8. Execute pipeline
       const result = await this.renderPipeline.execute(
@@ -326,6 +374,8 @@ export class RenderEngine implements IRenderEngine {
           domContext,
           compiledTemplate,
           hostElement: options.hostElement,
+          renderMode: adoptionDecision?.mode ?? "replace",
+          adoptedElement: this.resolveAdoptedElement(adoptionDecision),
         },
         domContext,
       );
@@ -365,8 +415,7 @@ export class RenderEngine implements IRenderEngine {
       return true;
     }
 
-    const initializerInstance =
-      initializerFactory() as PickInitializer<T>;
+    const initializerInstance = initializerFactory() as PickInitializer<T>;
     const success = await initializerInstance.initialize(component);
 
     if (!success) {
@@ -389,5 +438,15 @@ export class RenderEngine implements IRenderEngine {
         this.instanceRegistry.release(contextId);
       },
     };
+  }
+
+  private resolveAdoptedElement(
+    decision: PrerenderAdoptionDecision | null,
+  ): HTMLElement | null {
+    if (decision?.mode !== "adopt") {
+      return null;
+    }
+
+    return decision.candidate?.rootElement ?? null;
   }
 }

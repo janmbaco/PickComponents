@@ -458,6 +458,47 @@ test.describe("TemplateCompiler", () => {
     });
   });
 
+  test.describe("adoptExisting()", () => {
+    test("should bind a prerendered root without replacing it", async ({
+      compiler,
+      component,
+      domContext,
+    }) => {
+      // Arrange
+      component.title = "Client title";
+      component.message = "Hydrated text";
+
+      const adapter = TemplateMother.createMockDomAdapter();
+      const prerendered = adapter.createTemplateElement();
+      prerendered.innerHTML =
+        '<section><span title="Server title">Server text</span></section>';
+      const existingRoot = prerendered.content.firstElementChild as HTMLElement;
+
+      // Act
+      const result = await compiler.adoptExisting(
+        '<section><span title="{{title}}">{{message}}</span></section>',
+        existingRoot,
+        component,
+        domContext,
+      );
+
+      // Assert
+      expect(result).toBe(existingRoot);
+      const span = result.querySelector("span");
+      expect(span?.getAttribute("title")).toBe("Client title");
+      expect(span?.textContent).toBe("Hydrated text");
+      expect(result.classList.contains("testcomponent")).toBe(true);
+
+      component.title = "Updated title";
+      component.message = "Live text";
+      component.getPropertyObservable("title").notify();
+      component.getPropertyObservable("message").notify();
+
+      expect(span?.getAttribute("title")).toBe("Updated title");
+      expect(span?.textContent).toBe("Live text");
+    });
+  });
+
   /**
    * Edge case tests.
    * Validates boundary conditions and special scenarios.

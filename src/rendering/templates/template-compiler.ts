@@ -6,6 +6,7 @@ import type { IManagedElementRegistry } from "../managed-host/managed-element-re
 import type { IComponentMetadataRegistry } from "../../core/component-metadata-registry.interface.js";
 import { ComponentMetadata } from "../../core/component-metadata.js";
 import { IBindingResolver } from "../bindings/binding-resolver.js";
+import { NodeType } from "../dom/node-types.js";
 
 /**
  * Implements the responsibility of compiling template HTML with reactive bindings.
@@ -88,6 +89,73 @@ export class TemplateCompiler implements ITemplateCompiler {
     if (!component) throw new Error("Component is required");
     if (!domContext) throw new Error("DOM context is required");
 
+    const rootElement = this.createRootElementFromTemplate(
+      templateSource,
+      component,
+      metadata,
+    );
+
+    // Register nested component elements as managed BEFORE binding so resolver can detect them
+    this.registerNestedManagedElements(rootElement);
+
+    // Use BindingResolver to compile all bindings (handles recursion internally)
+    this.bindingResolver.bindElement(rootElement, component, domContext);
+
+    this.prepareNestedPickForPresetTemplates(rootElement);
+
+    return rootElement;
+  }
+
+  /**
+   * Applies template bindings to an existing prerendered root element.
+   *
+   * @description
+   * The prerendered DOM contains already-resolved user-visible HTML, so binding
+   * markers are not present in the document. This method parses the matching
+   * template, copies only binding-bearing attributes/text into the existing DOM,
+   * then lets BindingResolver attach subscriptions and resolve the current state.
+   */
+  async adoptExisting<T extends PickComponent>(
+    templateSource: string,
+    existingRoot: HTMLElement,
+    component: T,
+    domContext: IDomContext,
+    metadata?: ComponentMetadata,
+  ): Promise<HTMLElement> {
+    if (!templateSource) throw new Error("Template source is required");
+    if (!existingRoot) throw new Error("Existing root element is required");
+    if (!component) throw new Error("Component is required");
+    if (!domContext) throw new Error("DOM context is required");
+
+    const templateRoot = this.createRootElementFromTemplate(
+      templateSource,
+      component,
+      metadata,
+    );
+
+    this.copyTemplateBindingsToExistingRoot(templateRoot, existingRoot);
+
+    for (const className of Array.from(templateRoot.classList)) {
+      if (!existingRoot.classList.contains(className)) {
+        existingRoot.classList.add(className);
+      }
+    }
+
+    // Register nested component elements before binding, but leave the adopted
+    // root unregistered until the pipeline records it. BindingResolver must be
+    // able to recurse into the root itself.
+    this.registerNestedManagedElements(existingRoot);
+    this.bindingResolver.bindElement(existingRoot, component, domContext);
+    this.prepareNestedPickForPresetTemplates(existingRoot);
+
+    return existingRoot;
+  }
+
+  private createRootElementFromTemplate<T extends PickComponent>(
+    templateSource: string,
+    component: T,
+    metadata?: ComponentMetadata,
+  ): HTMLElement {
     // Use provided metadata or fallback to registry lookup
     const resolvedMetadata =
       metadata && typeof metadata === "object" && "selector" in metadata
@@ -117,14 +185,133 @@ export class TemplateCompiler implements ITemplateCompiler {
       rootElement.classList.add(selector);
     }
 
-    rootElement = this.restorePickForTemplatePlaceholders(rootElement);
+    return this.restorePickForTemplatePlaceholders(rootElement);
+  }
 
-    // Register nested component elements as managed BEFORE binding so resolver can detect them
-    this.registerNestedManagedElements(rootElement);
+  private copyTemplateBindingsToExistingRoot(
+    templateElement: Element,
+    existingElement: Element,
+  ): void {
+    if (!this.areStructurallyCompatible(templateElement, existingElement)) {
+      return;
+    }
 
-    // Use BindingResolver to compile all bindings (handles recursion internally)
-    this.bindingResolver.bindElement(rootElement, component, domContext);
+    this.copyBindingAttributes(templateElement, existingElement);
+    this.copyBindingTextNodes(templateElement, existingElement);
 
+    if (this.isManagedTemplateBoundary(templateElement)) {
+      if (!this.hasMeaningfulChildren(templateElement)) {
+        existingElement.replaceChildren();
+      }
+      return;
+    }
+
+    const existingChildren = Array.from(existingElement.children);
+    let searchStart = 0;
+
+    for (const templateChild of Array.from(templateElement.children)) {
+      const match = this.findNextCompatibleExistingChild(
+        templateChild,
+        existingChildren,
+        searchStart,
+      );
+
+      if (!match) {
+        continue;
+      }
+
+      this.copyTemplateBindingsToExistingRoot(templateChild, match);
+      searchStart = existingChildren.indexOf(match) + 1;
+    }
+  }
+
+  private copyBindingAttributes(
+    templateElement: Element,
+    existingElement: Element,
+  ): void {
+    for (const attr of Array.from(templateElement.attributes)) {
+      if (attr.value.includes("{{")) {
+        existingElement.setAttribute(attr.name, attr.value);
+      }
+    }
+  }
+
+  private copyBindingTextNodes(
+    templateElement: Element,
+    existingElement: Element,
+  ): void {
+    const existingTextNodes = Array.from(existingElement.childNodes).filter(
+      (node) => node.nodeType === NodeType.TEXT_NODE,
+    );
+    let textIndex = 0;
+
+    for (const node of Array.from(templateElement.childNodes)) {
+      if (node.nodeType !== NodeType.TEXT_NODE) {
+        continue;
+      }
+
+      const target = existingTextNodes[textIndex];
+      textIndex += 1;
+
+      if (node.textContent?.includes("{{") && target) {
+        target.textContent = node.textContent;
+      }
+    }
+  }
+
+  private findNextCompatibleExistingChild(
+    templateChild: Element,
+    existingChildren: Element[],
+    startIndex: number,
+  ): Element | null {
+    for (let index = startIndex; index < existingChildren.length; index++) {
+      const existingChild = existingChildren[index];
+
+      if (this.areStructurallyCompatible(templateChild, existingChild)) {
+        return existingChild;
+      }
+    }
+
+    return null;
+  }
+
+  private areStructurallyCompatible(
+    templateElement: Element,
+    existingElement: Element,
+  ): boolean {
+    return (
+      templateElement.tagName.toLowerCase() ===
+      existingElement.tagName.toLowerCase()
+    );
+  }
+
+  private isManagedTemplateBoundary(element: Element): boolean {
+    const tagName = element.tagName.toLowerCase();
+
+    return (
+      TemplateCompiler.TEMPLATE_BOUNDARY_ELEMENTS.has(tagName) ||
+      (tagName.includes("-") && this.metadataSource.has(tagName))
+    );
+  }
+
+  private hasMeaningfulChildren(element: Element): boolean {
+    for (const node of Array.from(element.childNodes)) {
+      if (node.nodeType === NodeType.ELEMENT_NODE) {
+        return true;
+      }
+
+      if (
+        node.nodeType === NodeType.TEXT_NODE &&
+        node.textContent?.trim().length
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private prepareNestedPickForPresetTemplates(rootElement: HTMLElement): void {
     // Pre-capture templates for nested pick-for elements AFTER binding (so the items
     // attribute is already resolved) but BEFORE DOM insertion.  Uses a data attribute
     // because elements in <template> content fragments are NOT upgraded to Custom
@@ -139,8 +326,6 @@ export class TemplateCompiler implements ITemplateCompiler {
         sf.setAttribute("data-preset-template", sf.innerHTML);
       }
     }
-
-    return rootElement;
   }
 
   private preparePickForTemplateBoundaries(templateSource: string): string {

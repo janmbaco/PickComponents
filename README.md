@@ -413,10 +413,11 @@ a `pick-action` event that the nearest PickComponent handles.
 | `npm run build:release`    | Prepare GitHub release browser artifacts in `.release-artifacts/` |
 | `npm run build`            | Compile library + examples                                        |
 | `npm run serve:dev`        | Start dev server on `http://localhost:3000`                       |
-| `npm run serve:dist`       | Serve the built examples bundle on `http://localhost:8080`        |
+| `npm run serve:dist`       | Serve built examples with SEO file-first routes on port `8080`    |
 | `npm test`                 | Run full test suite (unit + integration)                          |
 | `npm run test:unit`        | Unit tests only                                                   |
 | `npm run test:integration` | Integration tests only                                            |
+| `npm run test:coverage`    | Run unit + integration tests with an 80% V8 coverage threshold    |
 | `npm run lint`             | Lint source files                                                 |
 | `npm run format`           | Format source files                                               |
 
@@ -444,6 +445,11 @@ npm run build
 npm run serve:dist   # http://localhost:8080
 ```
 
+The playground also includes an edge worker template at
+`deploy/cloudflare/public-route-worker.mjs`. It serves prerendered public routes
+first, then falls back to the SPA shell for app-only paths. Crawler and browser
+requests receive the same canonical HTML; the client bundle only enhances it.
+
 ### Examples
 
 | #   | Tab                       | Category     | Description                                      |
@@ -470,6 +476,7 @@ npm run serve:dist   # http://localhost:8080
 docker build -t pick-components .
 docker run -p 8080:8080 pick-components
 # Playground available at http://localhost:8080
+# Public routes available at http://localhost:8080/es/01-hello
 ```
 
 ---
@@ -480,7 +487,8 @@ docker run -p 8080:8080 pick-components
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [docs/DEPENDENCY-INJECTION.md](docs/DEPENDENCY-INJECTION.md)                 | DI architecture and service registry                         |
 | [docs/FRAMEWORK-COMPARISON.md](docs/FRAMEWORK-COMPARISON.md)                 | How Pick Components compares with other UI frameworks         |
-| [docs/SMART-VS-SMARTRENDER.md](docs/SMART-VS-SMARTRENDER.md)                 | When to use `@Pick` vs `@PickRender`                       |
+| [docs/PICK-VS-PICKRENDER.md](docs/PICK-VS-PICKRENDER.md)                     | When to use `@Pick` vs `@PickRender`                       |
+| [docs/SEO.md](docs/SEO.md)                                                   | SEO-compatible prerendering and public route delivery         |
 | [docs/RENDERING-ARCHITECTURE.md](docs/RENDERING-ARCHITECTURE.md)             | Rendering pipeline overview                                  |
 | [docs/RENDERING-PIPELINE-DEEP-DIVE.md](docs/RENDERING-PIPELINE-DEEP-DIVE.md) | Expression parsing, binding resolution, reactivity internals |
 | [docs/templates.md](docs/templates.md)                                       | Template system reference                                    |

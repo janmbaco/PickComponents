@@ -98,33 +98,60 @@ export class RenderPipeline implements IRenderPipeline {
   async execute<T extends PickComponent>(
     options: PipelineOptions<T>,
   ): Promise<RenderResult> {
-    const { component, metadata, domContext, compiledTemplate, hostElement } =
-      options;
+    const {
+      component,
+      metadata,
+      domContext,
+      compiledTemplate,
+      hostElement,
+      renderMode = "replace",
+      adoptedElement = null,
+    } = options;
 
     let lifecycleManager: PickLifecycleManager<T> | null = null;
+    let rootElement: HTMLElement | null = null;
 
     try {
-      // Compile template to HTML element
-      const templateSource = compiledTemplate.templateString;
-      const compiledElement = await this.templateCompiler.compile(
-        templateSource,
-        component,
-        domContext,
-        metadata,
-      );
+      if (renderMode === "adopt" && adoptedElement) {
+        rootElement = adoptedElement;
 
-      // Apply managed host processing if host element provided
-      if (hostElement) {
-        // Register host element as managed BEFORE processing
-        this.managedRegistry.register(hostElement, metadata.selector);
-        this.processManagedHost(compiledElement, hostElement, metadata);
+        if (hostElement) {
+          this.managedRegistry.register(hostElement, metadata.selector);
+        }
+
+        domContext.adoptElement(rootElement, DomContentType.COMPONENT);
+        await this.templateCompiler.adoptExisting(
+          compiledTemplate.templateString,
+          rootElement,
+          component,
+          domContext,
+          metadata,
+        );
+        this.managedRegistry.register(rootElement, metadata.selector);
+      } else {
+        // Compile template to HTML element
+        const templateSource = compiledTemplate.templateString;
+        const compiledElement = await this.templateCompiler.compile(
+          templateSource,
+          component,
+          domContext,
+          metadata,
+        );
+        rootElement = compiledElement;
+
+        // Apply managed host processing if host element provided
+        if (hostElement) {
+          // Register host element as managed BEFORE processing
+          this.managedRegistry.register(hostElement, metadata.selector);
+          this.processManagedHost(compiledElement, hostElement, metadata);
+        }
+
+        // Register root element as managed component element
+        this.managedRegistry.register(compiledElement, metadata.selector);
+
+        // Register element in DOM context — this also replaces the skeleton in the DOM.
+        domContext.setElement(compiledElement, DomContentType.COMPONENT);
       }
-
-      // Register root element as managed component element
-      this.managedRegistry.register(compiledElement, metadata.selector);
-
-      // Register element in DOM context — this also replaces the skeleton in the DOM.
-      domContext.setElement(compiledElement, DomContentType.COMPONENT);
 
       // Apply shared stylesheets via adoptedStyleSheets (Lit pattern)
       const targetRoot = domContext.getTargetRoot();
@@ -145,8 +172,8 @@ export class RenderPipeline implements IRenderPipeline {
         );
         if (existing) {
           existing.removeAttribute("data-skeleton-styles");
-        } else {
-          const styleEl = compiledElement.ownerDocument.createElement("style");
+        } else if (rootElement) {
+          const styleEl = rootElement.ownerDocument.createElement("style");
           styleEl.textContent = metadata.styles;
           targetRoot.prepend(styleEl);
         }
@@ -173,7 +200,7 @@ export class RenderPipeline implements IRenderPipeline {
       }
 
       return {
-        eventTarget: compiledElement,
+        eventTarget: rootElement ?? undefined,
         cleanup: () => {
           // Unregister from host resolver
           if (this.hostResolver) {
@@ -184,7 +211,9 @@ export class RenderPipeline implements IRenderPipeline {
           if (hostElement) {
             this.managedRegistry.unregister(hostElement);
           }
-          this.managedRegistry.unregister(compiledElement);
+          if (rootElement) {
+            this.managedRegistry.unregister(rootElement);
+          }
 
           if (lifecycleManager) {
             lifecycleManager.stopListening();

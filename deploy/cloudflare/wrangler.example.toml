@@ -1,0 +1,8 @@
+# Example Cloudflare Workers config for the Pick Components playground.
+# Copy or adapt this into your deployment config.
+
+name = "pick-components-examples"
+main = "deploy/cloudflare/public-route-worker.mjs"
+compatibility_date = "2026-04-21"
+
+assets = { directory = "examples", binding = "ASSETS" }

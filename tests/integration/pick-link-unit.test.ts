@@ -101,6 +101,33 @@ test.describe("PickLinkElement (unit)", () => {
     host.disconnectedCallback();
   });
 
+  test("should enhance an existing anchor without replacing it", async () => {
+    // Arrange
+    const host = document.createElement(
+      "div",
+    ) as unknown as InstanceType<PickLinkElementCtor>;
+    Object.setPrototypeOf(host, PickLinkElement.prototype);
+    host.setAttribute("to", "/docs");
+
+    const existingAnchor = document.createElement("a");
+    existingAnchor.setAttribute("href", "/docs");
+    existingAnchor.textContent = "Docs";
+    host.appendChild(existingAnchor);
+    document.body.appendChild(host);
+
+    // Act
+    host.connectedCallback();
+
+    // Assert
+    const anchor = host.querySelector("a");
+    expect(anchor).toBe(existingAnchor);
+    expect(anchor!.getAttribute("href")).toBe("/docs");
+    expect(anchor!.textContent).toBe("Docs");
+
+    host.disconnectedCallback();
+    expect(host.querySelector("a")).toBe(existingAnchor);
+  });
+
   test('should default to "/" when to attribute is missing', async () => {
     // Arrange
     const host = document.createElement(
@@ -236,6 +263,34 @@ test.describe("PickLinkElement (unit)", () => {
     anchor.dispatchEvent(ctrlClick);
 
     // Assert
+    expect(dom.window.location.pathname).toBe("/");
+
+    host.disconnectedCallback();
+  });
+
+  test("should not intercept links that target a new browsing context", async () => {
+    // Arrange
+    const host = document.createElement(
+      "div",
+    ) as unknown as InstanceType<PickLinkElementCtor>;
+    Object.setPrototypeOf(host, PickLinkElement.prototype);
+    host.setAttribute("to", "/new-window");
+    host.textContent = "New window";
+    document.body.appendChild(host);
+    host.connectedCallback();
+
+    const anchor = host.querySelector("a")!;
+    anchor.setAttribute("target", "_blank");
+
+    // Act
+    const clickEvent = new dom.window.MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    anchor.dispatchEvent(clickEvent);
+
+    // Assert
+    expect(clickEvent.defaultPrevented).toBe(false);
     expect(dom.window.location.pathname).toBe("/");
 
     host.disconnectedCallback();

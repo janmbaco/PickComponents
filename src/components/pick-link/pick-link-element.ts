@@ -26,6 +26,7 @@ const isBrowser =
 
 export class PickLinkElement extends HTMLElement {
   private anchor: HTMLAnchorElement | null = null;
+  private ownsAnchor = false;
   private transparentHost: ITransparentHost | null = null;
   private navigation: INavigationService | null = null;
   private unsubscribeNavigation: (() => void) | null = null;
@@ -53,11 +54,18 @@ export class PickLinkElement extends HTMLElement {
     this.navigation = Services.get<INavigationService>("INavigationService");
 
     const to = this.getAttribute("to") || "/";
+    this.anchor = this.findExistingAnchor();
 
-    this.anchor = document.createElement("a");
-    this.anchor.href = to;
-    this.moveHostChildrenToAnchor();
-    this.transparentHost.insert(this.anchor);
+    if (this.anchor) {
+      this.ownsAnchor = false;
+      this.anchor.href = to;
+    } else {
+      this.ownsAnchor = true;
+      this.anchor = document.createElement("a");
+      this.anchor.href = to;
+      this.moveHostChildrenToAnchor();
+      this.transparentHost.insert(this.anchor);
+    }
 
     const clickHandler = (event: MouseEvent) => {
       this.handleClick(event);
@@ -83,9 +91,12 @@ export class PickLinkElement extends HTMLElement {
     this.eventListeners = [];
     this.unsubscribeNavigation?.();
     this.unsubscribeNavigation = null;
-    this.restoreAnchorChildrenToHost();
-    this.anchor?.parentNode?.removeChild(this.anchor);
+    if (this.ownsAnchor) {
+      this.restoreAnchorChildrenToHost();
+      this.anchor?.parentNode?.removeChild(this.anchor);
+    }
     this.anchor = null;
+    this.ownsAnchor = false;
     this.navigation = null;
     this.transparentHost?.disconnect();
     this.transparentHost = null;
@@ -127,13 +138,46 @@ export class PickLinkElement extends HTMLElement {
       return;
     }
 
+    if (event.button !== 0) {
+      return;
+    }
+
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
     }
 
+    if (!this.anchor || !this.canInterceptAnchor(this.anchor)) {
+      return;
+    }
+
     event.preventDefault();
-    const to = this.getAttribute("to") || "/";
+    const targetUrl = new URL(this.anchor.href, window.location.href);
+    const to = `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`;
     this.navigation?.navigate(to);
+  }
+
+  private findExistingAnchor(): HTMLAnchorElement | null {
+    const firstElement = this.firstElementChild;
+
+    if (firstElement?.tagName.toLowerCase() === "a") {
+      return firstElement as HTMLAnchorElement;
+    }
+
+    return this.querySelector(":scope > a");
+  }
+
+  private canInterceptAnchor(anchor: HTMLAnchorElement): boolean {
+    if (anchor.hasAttribute("download")) {
+      return false;
+    }
+
+    const target = anchor.getAttribute("target");
+    if (target && target.toLowerCase() !== "_self") {
+      return false;
+    }
+
+    const url = new URL(anchor.href, window.location.href);
+    return url.origin === window.location.origin;
   }
 
   /**

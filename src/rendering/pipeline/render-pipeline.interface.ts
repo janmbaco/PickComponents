@@ -3,6 +3,7 @@ import { ComponentMetadata } from "../../core/component-metadata.js";
 import { RenderResult } from "../render-engine.js";
 import { IDomContext } from "../dom-context/dom-context.interface.js";
 import { ICompiledTemplate } from "../templates/compiled-template.interface.js";
+import type { ClientRenderMode } from "../../ssr/prerender-manifest.js";
 
 /**
  * Defines the responsibility of configuring pipeline execution.
@@ -18,6 +19,10 @@ export interface PipelineOptions<T extends PickComponent = PickComponent> {
   compiledTemplate: ICompiledTemplate;
   /** The custom element itself (for host projection content) */
   hostElement?: HTMLElement;
+  /** Pipeline placement strategy for the first client boot. */
+  renderMode?: ClientRenderMode;
+  /** Existing DOM root to adopt when renderMode is "adopt". */
+  adoptedElement?: HTMLElement | null;
 }
 
 /**

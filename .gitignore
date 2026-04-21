@@ -11,6 +11,7 @@ dist/
 
 # Cache
 .cache/
+.coverage/
 
 # Private plans and working docs
 .plans/
@@ -44,6 +45,8 @@ examples/bundle.js
 examples/bundle.js.map
 
 # Playground build outputs
+examples/en/
+examples/es/
 examples/playground-examples/
 examples/vendor/
 

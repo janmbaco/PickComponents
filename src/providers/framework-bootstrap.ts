@@ -34,6 +34,7 @@ import { DependencyTracker } from "../reactive/dependency-tracker.js";
 import { WeakRefObjectRegistry } from "../utils/object-registry.js";
 import { BrowserNavigationService } from "../components/pick-router/navigation.js";
 import { SharedStylesRegistry } from "../rendering/styles/shared-styles-registry.js";
+import { DefaultPrerenderAdoptionDecider } from "../ssr/prerender-manifest.js";
 
 /**
  * Map of service token overrides.
@@ -131,6 +132,10 @@ export async function bootstrapFramework(
 
   // Shared styles (adoptedStyleSheets across all Shadow Roots)
   register("ISharedStylesRegistry", () => new SharedStylesRegistry());
+  register(
+    "IPrerenderAdoptionDecider",
+    () => new DefaultPrerenderAdoptionDecider(),
+  );
 
   // Skeleton
   register("ISkeletonValidator", () => new SkeletonValidator());
@@ -256,6 +261,7 @@ export async function bootstrapFramework(
         registry.get("ITemplateProvider"),
         registry.get("IComponentInstanceRegistry"),
         registry.get("IComponentMetadataRegistry"),
+        registry.get("IPrerenderAdoptionDecider"),
       ),
   );
 

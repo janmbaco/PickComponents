@@ -382,5 +382,5 @@ One rule governs the whole system: whoever needs the object is responsible for c
 ## Related Docs
 
 - Rendering architecture: [RENDERING-ARCHITECTURE.md](RENDERING-ARCHITECTURE.md)
-- Pick vs PickRender: [SMART-VS-SMARTRENDER.md](SMART-VS-SMARTRENDER.md)
+- Pick vs PickRender: [PICK-VS-PICKRENDER.md](PICK-VS-PICKRENDER.md)
 - Spanish version: [DEPENDENCY-INJECTION.es.md](DEPENDENCY-INJECTION.es.md)

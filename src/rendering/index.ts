@@ -1,6 +1,7 @@
 // Core rendering engine and factory
 export { RenderEngine } from "./render-engine.js";
 export type {
+  ClientBootOptions,
   IRenderEngine,
   RenderOptions,
   RenderResult,

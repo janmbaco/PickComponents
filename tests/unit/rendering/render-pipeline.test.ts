@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { RenderPipeline } from "../../../src/rendering/pipeline/render-pipeline.js";
 import type { PipelineOptions } from "../../../src/rendering/pipeline/render-pipeline.interface.js";
 import { ComponentMetadataMother } from "../../fixtures/component-metadata.mother.js";
@@ -154,6 +154,55 @@ test.describe("RenderPipeline (Unit Tests)", () => {
         "Initializer should be handled before RenderPipeline.execute()",
       );
     }
+  });
+
+  test("adopts an existing DOM root without compiling or replacing it", async () => {
+    // Arrange
+    const templateCompiler = new MockTemplateCompiler();
+    const errorRenderer = new MockErrorRenderer();
+    const pipeline = createPipeline(templateCompiler, errorRenderer);
+
+    const metadata = ComponentMetadataMother.minimal();
+    const component = ComponentMother.withProperty("value", "server");
+    const domContext = MockDomContextFactory.create();
+    const adoptedElement = {
+      tagName: "DIV",
+      ownerDocument: {
+        createElement(tag: string): { tagName: string; textContent: string } {
+          return { tagName: tag.toUpperCase(), textContent: "" };
+        },
+      },
+      querySelectorAll: () => [],
+      querySelector: () => null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    } as unknown as HTMLElement;
+    const compiledTemplate = {
+      templateString: "<div>{{value}}</div>",
+      bindings: new Set(["value"]),
+      clone: function () {
+        return { ...this };
+      },
+    };
+
+    const options: PipelineOptions<any> = {
+      component,
+      metadata,
+      domContext,
+      compiledTemplate,
+      renderMode: "adopt",
+      adoptedElement,
+    };
+
+    // Act
+    const result = await pipeline.execute(options);
+
+    // Assert
+    expect(result.eventTarget).toBe(adoptedElement);
+    expect(templateCompiler.getCompileCount()).toBe(0);
+    expect(templateCompiler.getAdoptExistingCount()).toBe(1);
+    expect(domContext.wasMethodCalled("adoptElement")).toBe(true);
+    expect(domContext.wasMethodCalled("setElement")).toBe(false);
   });
 
   test("calls lifecycle manager when provided in metadata", async () => {

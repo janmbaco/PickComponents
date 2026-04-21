@@ -37,4 +37,23 @@ export interface ITemplateCompiler {
     domContext: IDomContext,
     metadata?: ComponentMetadata,
   ): Promise<HTMLElement>;
+
+  /**
+   * Activates a prerendered root element by applying template bindings to the
+   * existing DOM instead of creating and inserting a fresh tree.
+   *
+   * @param templateSource - Preprocessed template HTML string
+   * @param existingRoot - DOM root already present in the document
+   * @param component - Component instance for binding context
+   * @param domContext - DOM context for managing subscriptions and element references
+   * @param metadata - Optional component metadata for selector and configuration
+   * @returns Promise resolving to the adopted root element
+   */
+  adoptExisting(
+    templateSource: string,
+    existingRoot: HTMLElement,
+    component: PickComponent,
+    domContext: IDomContext,
+    metadata?: ComponentMetadata,
+  ): Promise<HTMLElement>;
 }

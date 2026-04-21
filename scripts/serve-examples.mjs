@@ -1,5 +1,5 @@
 import { createServer } from "http";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join, extname } from "path";
 import { fileURLToPath } from "url";
 
@@ -21,7 +21,9 @@ const mimeTypes = {
 };
 
 const server = createServer((req, res) => {
-  let filePath = join(examplesDir, req.url === "/" ? "index.html" : req.url);
+  const requestUrl = new URL(req.url || "/", "http://localhost");
+  const pathname = decodeURIComponent(requestUrl.pathname);
+  const filePath = resolveRequestFile(pathname);
   const ext = extname(filePath);
   const contentType = mimeTypes[ext] || "application/octet-stream";
 
@@ -35,7 +37,7 @@ const server = createServer((req, res) => {
   } catch (error) {
     if (error.code === "ENOENT") {
       // SPA Fallback: Serve index.html for non-file requests
-      if (!ext) {
+      if (!extname(pathname)) {
         try {
           const indexContent = readFileSync(join(examplesDir, "index.html"));
           res.writeHead(200, {
@@ -56,6 +58,26 @@ const server = createServer((req, res) => {
     }
   }
 });
+
+function resolveRequestFile(pathname) {
+  if (pathname === "/") {
+    return join(examplesDir, "index.html");
+  }
+
+  const directPath = join(examplesDir, pathname);
+  const ext = extname(pathname);
+
+  if (ext) {
+    return directPath;
+  }
+
+  const indexPath = join(directPath, "index.html");
+  if (existsSync(indexPath)) {
+    return indexPath;
+  }
+
+  return directPath;
+}
 
 const PORT = 3000;
 server.listen(PORT, () => {
