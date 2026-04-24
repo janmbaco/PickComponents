@@ -64,6 +64,17 @@ test.describe("SafeContentSelector", () => {
     expect(fragments.map((f) => f.content)).toEqual(["{{yes}}", "{{text}}"]);
   });
 
+  test("should exclude srcdoc attributes", () => {
+    // Arrange
+    const html = '<iframe srcdoc="{{no}}" data-val="{{yes}}"></iframe>';
+
+    // Act
+    const fragments = select(html);
+
+    // Assert
+    expect(fragments.map((f) => f.content)).toEqual(["{{yes}}"]);
+  });
+
   test("should exclude artifacts from invalid tag names", () => {
     // Arrange
     const html = "<{{tag}}></{{tag}}>";

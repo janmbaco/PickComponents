@@ -346,6 +346,111 @@ test.describe("BindingResolver Contract", () => {
     });
   });
 
+  test.describe("attribute binding safety", () => {
+    test("should remove dynamic event handler attributes instead of resolving them", () => {
+      // Arrange
+      const mockResolver: IManagedElementResolver = {
+        isManagedElement: () => false,
+      };
+      const { bindingResolver } = createResolver(mockResolver);
+      const button = document.createElement("button");
+      button.setAttribute("onclick", "{{payload}}");
+      const component = createMockComponent({ payload: "alert(1)" });
+
+      // Act
+      bindingResolver.bindElement(
+        button,
+        component as any,
+        createMockBindingTarget(),
+      );
+
+      // Assert
+      expect(button.hasAttribute("onclick")).toBe(false);
+    });
+
+    test("should remove dynamic style attributes instead of resolving them", () => {
+      // Arrange
+      const mockResolver: IManagedElementResolver = {
+        isManagedElement: () => false,
+      };
+      const { bindingResolver } = createResolver(mockResolver);
+      const card = document.createElement("div");
+      card.setAttribute("style", "{{cssText}}");
+      const component = createMockComponent({
+        cssText: "background: url(javascript:alert(1))",
+      });
+
+      // Act
+      bindingResolver.bindElement(
+        card,
+        component as any,
+        createMockBindingTarget(),
+      );
+
+      // Assert
+      expect(card.hasAttribute("style")).toBe(false);
+    });
+
+    test("should remove unsafe dynamic URL attribute values", () => {
+      // Arrange
+      const mockResolver: IManagedElementResolver = {
+        isManagedElement: () => false,
+      };
+      const { bindingResolver } = createResolver(mockResolver);
+      const cases = [
+        {
+          element: document.createElement("a"),
+          attribute: "href",
+          value: "javascript:alert(1)",
+        },
+        {
+          element: document.createElement("img"),
+          attribute: "src",
+          value: "data:text/html,<script>alert(1)</script>",
+        },
+      ];
+
+      // Act
+      for (const unsafeCase of cases) {
+        unsafeCase.element.setAttribute(unsafeCase.attribute, "{{url}}");
+        const component = createMockComponent({ url: unsafeCase.value });
+        bindingResolver.bindElement(
+          unsafeCase.element,
+          component as any,
+          createMockBindingTarget(),
+        );
+      }
+
+      // Assert
+      for (const unsafeCase of cases) {
+        expect(unsafeCase.element.hasAttribute(unsafeCase.attribute)).toBe(
+          false,
+        );
+      }
+    });
+
+    test("should keep safe dynamic URL attribute values", () => {
+      // Arrange
+      const mockResolver: IManagedElementResolver = {
+        isManagedElement: () => false,
+      };
+      const { bindingResolver } = createResolver(mockResolver);
+      const link = document.createElement("a");
+      link.setAttribute("href", "{{path}}");
+      const component = createMockComponent({ path: "/account/settings" });
+
+      // Act
+      bindingResolver.bindElement(
+        link,
+        component as any,
+        createMockBindingTarget(),
+      );
+
+      // Assert
+      expect(link.getAttribute("href")).toBe("/account/settings");
+    });
+  });
+
   test.describe("nested $item property path resolution (nested pick-for)", () => {
     test("should resolve {{$item.items}} array from outer pick-for scope to objectId", () => {
       // Arrange — simulates the outer pick-for scope: $item = { name: 'Frontend', items: [...] }

@@ -40,27 +40,32 @@ This document describes how a PickComponent renders from metadata to a live, rea
 ## 1. Big picture: from decorator to DOM
 
 ```
-@PickRender({ selector, template, ... })
-       │
-       │ registers metadata in
-       ▼
-ComponentMetadataRegistry
-       │
-       │ when browser upgrades the custom element:
-       ▼
-RenderEngine.render()
-   ├─ creates DomContext (manages DOM + subscriptions)
-   ├─ creates / retrieves component instance (ComponentInstanceRegistry)
-   ├─ shows skeleton immediately (SkeletonRenderer)
-   ├─ runs initializer before first real render
-   ├─ resolves [[RULES.*]] in the template (TemplateProvider)
-   ├─ analyses bindings (TemplateAnalyzer)
-   └─ runs RenderPipeline
-          ├─ compiles template to reactive DOM (TemplateCompiler + BindingResolver)
-          ├─ migrates host styles (OutletResolver + HostStyleMigrator)
-          ├─ replaces skeleton in DOM (DomContext.setElement)
-          ├─ wires event listeners
-          └─ starts lifecycle manager
+@Pick / @PickRender
+       ├─ registers metadata in ComponentMetadataRegistry
+       └─ registers a custom element via PickElementRegistrar / PickElementFactory
+                                               │
+                                               │ when the browser upgrades the host:
+                                               ▼
+                                  PickElementFactory.connectedCallback()
+                                     ├─ creates the component instance
+                                     ├─ reflects host attributes into component props
+                                     ├─ chooses the render target
+                                     │    ├─ ShadowRoot by default
+                                     │    └─ anchored/light DOM for restrictive parents
+                                     │       or compatible prerender adoption
+                                     └─ calls RenderEngine.render()
+                                              ├─ creates DomContext / AnchoredDomContext
+                                              ├─ stores the instance in ComponentInstanceRegistry
+                                              ├─ shows skeleton (unless adopt mode skips it)
+                                              ├─ runs initializer
+                                              ├─ resolves [[RULES.*]] via TemplateProvider
+                                              ├─ analyzes and caches the template
+                                              └─ runs RenderPipeline
+                                                     ├─ compiles or adopts DOM
+                                                     ├─ migrates host styles
+                                                     ├─ replaces/adopts content in the target root
+                                                     ├─ wires event listeners
+                                                     └─ starts the lifecycle manager
 ```
 
 ---
@@ -69,17 +74,17 @@ RenderEngine.render()
 
 ### Step 1 — Metadata lookup
 
-`RenderEngine.render()` receives a `componentId` (the custom element tag name) and reads `ComponentMetadata` from `ComponentMetadataRegistry`. Metadata includes: `selector`, `template`, `initializer`, `lifecycle`, `rules`, `skeleton`, etc.
+`RenderEngine.render()` receives a `componentId` (the custom element tag name) and reads `ComponentMetadata` from `ComponentMetadataRegistry`. Metadata includes `selector`, `template`, `styles`, `initializer`, `lifecycle`, `skeleton`, and `errorTemplate`.
 
 ### Step 2 — Context and instance creation
 
-A new **`DomContext`** is created (1:1 with the target host element or ShadowRoot). It owns all DOM subscriptions for the component's lifetime.
+A new **`DomContext`** is created for normal rendering targets, or an **`AnchoredDomContext`** is created when the host lives under a restrictive native parent such as `tbody`, `tr`, `ul`, or `select`. The context owns DOM subscriptions for the component's lifetime.
 
-A component instance is retrieved or created via **`ComponentInstanceRegistry`**. Each host element gets exactly one instance, keyed by `contextId`.
+The component instance is created by the custom-element wrapper in `PickElementFactory`, then tracked in **`ComponentInstanceRegistry`** keyed by the DOM context's `contextId`.
 
 ### Step 3 — Skeleton display
 
-**`SkeletonRenderer`** renders the loading state immediately, before any async work. Priority:
+**`SkeletonRenderer`** renders the loading state immediately, before any async work, unless the first client render is adopting compatible prerendered markup. Priority:
 
 1. Custom skeleton from metadata
 2. Default animated-dot skeleton
@@ -90,7 +95,7 @@ A component instance is retrieved or created via **`ComponentInstanceRegistry`**
 
 1. If `metadata.initializer` exists, it is instantiated and awaited.
 2. The initializer can hydrate component state before the first real render.
-3. This is the stage where `component.rules` can be loaded for `[[RULES.field]]`.
+3. This is the stage where `component.rules` can be prepared for later `[[RULES.field]]` resolution.
 
 If initialization fails, the engine renders the error template without entering the main render pipeline.
 
@@ -99,10 +104,10 @@ If initialization fails, the engine renders the error template without entering 
 **`TemplateProvider`**:
 
 1. Reads the raw template string from metadata.
-2. Resolves `[[RULES.field]]` tokens (form validation attributes) via `RulesResolver`.
+2. Resolves `[[RULES.field]]` tokens (form validation attributes) via `RulesResolver` when the component instance exposes a `rules` object.
 3. Returns the preprocessed template string.
 
-Content projection is handled natively by Shadow DOM `<slot>` elements — no explicit capture step is required.
+When a component renders into a ShadowRoot, content projection is handled natively by browser `<slot>` elements — no explicit capture step is required.
 
 ### Step 6 — Binding analysis
 
@@ -110,16 +115,16 @@ Content projection is handled natively by Shadow DOM `<slot>` elements — no ex
 
 ### Step 7 — Pipeline execution (`RenderPipeline`)
 
-1. **TemplateCompiler** — Parses HTML into a real DOM element, registers nested Pick Components in `ManagedElementRegistry`, and calls `BindingResolver.bindElement()` to wire all reactive subscriptions.
+1. **TemplateCompiler** — Parses HTML into a real DOM element, or re-activates an adopted prerendered root, registers nested Pick Components in `ManagedElementRegistry`, and calls `BindingResolver.bindElement()` to wire reactive subscriptions.
 2. **Managed host processing** — Finds the outlet via `OutletResolver`, migrates `class`/`id` from host to outlet via `HostStyleMigrator`.
-3. **DOM replacement** — `DomContext.setElement()` swaps the skeleton for the compiled element.
-4. **Style injection** — If `metadata.styles` is set, a `<style>` element is prepended into the Shadow Root target so styles are scoped to the component.
-5. **Listeners** — `@Listen` decorators are wired to DOM events.
-6. **Lifecycle manager** — Component lifecycle begins (`onInit`, reactive updates, `onDestroy`).
+3. **DOM replacement / adoption** — `DomContext.setElement()` swaps the skeleton for a compiled element, or `DomContext.adoptElement()` keeps compatible prerendered DOM in place.
+4. **Styles** — Shared constructed stylesheets are applied via `adoptedStyleSheets` when the target root is a ShadowRoot. `metadata.styles` is prepended to the active target root in both modes, but only ShadowRoot targets provide true style encapsulation.
+5. **Listeners** — Listener metadata is wired to DOM events after the final root is mounted or adopted. This covers both `@Listen(...)` and listener metadata emitted by `@Pick`.
+6. **Lifecycle manager** — If configured, it starts with `onComponentReady(component)` and later stops with `onComponentDestroy(component)`.
 
 ### Step 8 — Cleanup
 
-Returns a cleanup function. When called (e.g. on route change): `DomContext.destroy()` removes the element and runs all subscription teardowns; `ComponentInstanceRegistry.release()` calls `onDestroy()` and frees the instance.
+Returns a cleanup function. When called, the pipeline unregisters managed elements, stops and disposes the lifecycle manager, destroys the DOM context, and then `ComponentInstanceRegistry.release()` calls `component.onDestroy()` and frees the instance.
 
 ---
 
@@ -131,7 +136,7 @@ Registries are the authoritative sources of truth for the system. No class reads
 
 **File:** `src/core/component-metadata-registry.ts`
 
-Stores component configuration indexed by selector (tag name). Populated at module load time by decorators (`@Pick`, `@PickRender`). Read by `RenderEngine`, `TemplateProvider`, `SkeletonRenderer`, and `TemplateCompiler`.
+Stores component configuration indexed by selector (tag name). Populated at module load time by decorators (`@Pick`, `@PickRender`). Read by `RenderEngine` and `TemplateProvider`.
 
 ```
 @PickRender({ selector: 'my-counter', template: `...` })
@@ -140,15 +145,15 @@ Stores component configuration indexed by selector (tag name). Populated at modu
 
 **Metadata shape (key fields):**
 
-| Field         | Description                                              |
-| ------------- | -------------------------------------------------------- |
-| `selector`    | Custom element tag name                                  |
-| `template`    | HTML template string                                     |
-| `styles`      | CSS string injected into the Shadow Root on every render |
-| `rules`       | Validation rules expanded from `component.rules` via `[[RULES.field]]` |
-| `skeleton`    | Custom loading HTML                                      |
-| `initializer` | Async factory called before rendering                    |
-| `inputs`      | Declared attribute names treated as component inputs     |
+| Field         | Description                                                        |
+| ------------- | ------------------------------------------------------------------ |
+| `selector`    | Custom element tag name                                            |
+| `template`    | HTML template string                                               |
+| `styles`      | CSS string prepended to the target root; Shadow DOM scopes it when the target is a `ShadowRoot` |
+| `skeleton`    | Custom loading HTML                                                |
+| `errorTemplate` | Optional HTML for render/init failures                           |
+| `initializer` | Async factory called before first real render                      |
+| `lifecycle`   | Factory that creates a `PickLifecycleManager` for this component   |
 
 ### ComponentInstanceRegistry
 
@@ -185,7 +190,7 @@ WeakMap-based registry (`Element → componentId`) tracking which DOM elements a
 
 **File:** `src/rendering/render-engine.ts`
 
-The single entry point for all rendering. Orchestrates skeleton display, template resolution, and pipeline execution. Returns a `RenderResult` containing the cleanup function.
+The single entry point for all rendering. Orchestrates DOM-context creation, optional skeleton display, initializer execution, template resolution, prerender adoption decisions, and pipeline execution. Returns a `RenderResult` containing the cleanup function and the event target for delegated `pick-action` handling.
 
 ```typescript
 const result = await renderEngine.render({
@@ -199,7 +204,7 @@ const result = await renderEngine.render({
 
 **File:** `src/rendering/pipeline/render-pipeline.ts`
 
-Executes the 6 sequential steps after skeleton display (see §2 steps 6–7). Receives compiled template from `TemplateCompiler`, processes managed host, replaces skeleton, wires listeners, and starts lifecycle.
+Executes the rendering steps after initialization. It can either compile a fresh DOM tree or adopt an existing prerendered root, then processes the managed host, wires listeners, starts the lifecycle manager, and prepares cleanup.
 
 If anything in the pipeline throws, `ErrorRenderer` shows an error overlay using the component's `errorTemplate` or a default fallback.
 
@@ -207,11 +212,12 @@ If anything in the pipeline throws, `ErrorRenderer` shows an error overlay using
 
 **File:** `src/rendering/dom-context/dom-context.ts`
 
-Owns the live DOM element and all reactive subscriptions for one rendering context. It is component-agnostic — it knows nothing about Pick Components, only about elements and cleanup callbacks.
+Owns the live DOM element and all reactive subscriptions for one rendering context. It is component-agnostic — it knows nothing about Pick Components, only about elements and cleanup callbacks. In restrictive-parent scenarios, `RenderEngine` uses `AnchoredDomContext`, which keeps the managed host alive but renders the visible DOM through a transparent anchor beside it.
 
 Key responsibilities:
 
-- `setElement(el, contentType)` — Replaces current content in the target root (host or ShadowRoot).
+- `setElement(el, contentType)` — Replaces current content in the target root (ShadowRoot or normal root).
+- `adoptElement(el, contentType)` — Marks compatible prerendered markup as the live root without replacing it.
 - `addSubscription(fn)` — Registers a teardown function.
 - `destroy()` — Removes the DOM element and runs all teardowns.
 - `query/queryAll(selector)` — CSS queries scoped to the rendered element.
@@ -227,10 +233,10 @@ Key responsibilities:
 Retrieves and preprocesses a template before reactive compilation:
 
 1. Looks up the template in `ComponentMetadataRegistry`.
-2. Calls `RulesResolver` to replace `[[RULES.field]]` tokens using `component.rules`.
+2. Calls `RulesResolver` to replace `[[RULES.field]]` tokens using `component.rules` when present.
 3. Returns the preprocessed template string.
 
-Content projection uses native Shadow DOM `<slot>` elements — no intermediate registry is needed.
+Content projection uses native `<slot>` elements when the component renders into a ShadowRoot — no intermediate registry is needed.
 
 ### RulesResolver preprocessing
 
@@ -269,7 +275,7 @@ Transforms the template string into a "live" `HTMLElement`:
 5. Pre-captures templates for nested `<pick-for>` elements via a `data-preset-template` attribute. This prevents a browser Custom Elements ordering race where an inner `pick-for`'s `connectedCallback` fires before its parent's (DOM `insertBefore` per spec triggers disconnect/reconnect), clearing its own `innerHTML` and corrupting the parent's template capture.
 6. Returns the root element ready for insertion.
 
-Content projection is handled by the browser natively via Shadow DOM `<slot>` elements.
+The same class also supports `adoptExisting(...)`, which copies binding-bearing markers from the canonical template into compatible prerendered DOM and then wires live subscriptions on top of that existing markup.
 
 ---
 
@@ -290,7 +296,7 @@ The heart of reactivity. Traverses the compiled DOM tree and creates a reactive 
 
 **Recursion rules:**
 
-- Descends into child elements unless `ManagedElementResolver.isManagedElement()` returns `true` — in that case, the nested component manages its own reactive tree via its own Shadow DOM.
+- Descends into child elements unless `ManagedElementResolver.isManagedElement()` returns `true` — in that case, the nested component manages its own reactive tree through its own render root.
 
 ### PropertyExtractor
 
@@ -299,7 +305,7 @@ The heart of reactivity. Traverses the compiled DOM tree and creates a reactive 
 Given a string like `"Hello {{user.name}}, you have {{count + 1}} items"`, returns `['user', 'count']` — the root property names that should be observed.
 
 - Simple bindings (`{{prop}}`, `{{obj.key}}`) → root token before `.` or `?`.
-- Complex expressions (`{{x + y}}`, `{{fn()}}`) → parsed with `ExpressionParserService` and extracted via `DependencyExtractor`.
+- Complex expressions (`{{x + y}}`, `{{fn()}}`) → parsed with `ExpressionParserService`; dependencies come from the parser result's `dependencies` array.
 
 ### ExpressionResolver
 
@@ -322,7 +328,7 @@ Façade over the AST expression engine. Tokenizes → parses → extracts depend
 "x > 0 ? 'yes' : 'no'"  →  AST(ConditionalExpression)  →  evaluate  →  "yes"
 ```
 
-The `ExpressionParserFactory` wires together: `ExpressionParserService`, `ASTEvaluator`, `ExpressionCache`, and `DependencyExtractor` — following the Factory Pattern to enable replacement in tests.
+At bootstrap time, the runtime wires `ExpressionParserService` together with `ASTEvaluator`, `PropertyExtractor`, and `ExpressionResolver` through the service registry.
 
 ---
 
@@ -336,19 +342,19 @@ Single-method interface: `isManagedElement(element): boolean`. Delegates to `Man
 
 ### Attribute binding policy
 
-Attribute binding is handled directly by `BindingResolver` and
-`PickElementFactory`; there is no separate attribute-policy service in the
-current runtime.
+Dynamic attribute binding follows a shared policy object, `defaultAttributeBindingPolicy`, used by both `BindingResolver` and the template analyzer's safe-content selector. Host attribute reflection still happens separately in `PickElementFactory`.
 
 Rules:
 
-| Rule                       | Examples                                              | Result                                                |
-| -------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
-| Host attribute on component | `<user-card user-id="42">`                            | Copied to the component property when it exists       |
-| Reactive attribute binding | `title="{{msg}}"`, `items="{{entries}}"`             | Bound by `BindingResolver`                            |
-| Object/array binding       | `items="{{entries}}"`                                 | Stored in `ObjectRegistry`; DOM receives an object id |
-| Boolean attributes         | `disabled="{{loading}}"`, `required="{{isRequired}}"` | Attribute presence and DOM property are synchronized  |
-| Structural pick-action    | `action`, `event`, `value`, `bubble`                  | Used by `<pick-action>`, not component inputs        |
+| Rule                        | Examples                                              | Result                                                           |
+| --------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| Host attribute on component | `<user-card user-id="42">`                            | Copied to the component property when it exists                  |
+| Reactive attribute binding  | `title="{{msg}}"`, `items="{{entries}}"`              | Bound by `BindingResolver`                                       |
+| Object/array binding        | `items="{{entries}}"`                                 | Stored in `ObjectRegistry`; DOM receives an object id            |
+| Boolean attributes          | `disabled="{{loading}}"`, `required="{{isRequired}}"` | Attribute presence and DOM property are synchronized             |
+| Dangerous attributes        | `onclick="{{x}}"`, `style="{{css}}"`, `srcdoc="{{x}}"`| Rejected by attribute policy                                     |
+| URL attributes              | `href="{{url}}"`, `src="{{imageUrl}}"`                | Sanitized; unsafe protocols such as `javascript:` are rejected   |
+| Structural pick-action      | `action`, `event`, `value`, `bubble`                  | Used by `<pick-action>`, not component inputs                    |
 
 `event` also works as an alias for `<pick-action action="...">`.
 New examples should use `action`. A handled `pick-action` stops at the nearest
@@ -388,7 +394,7 @@ After:
 
 ## 8. Content projection (native slots)
 
-Pick Components uses Shadow DOM and native `<slot>` elements for content projection:
+Pick Components uses native `<slot>` elements for content projection in its Shadow DOM rendering path:
 
 ```html
 <!-- Component template -->
@@ -410,16 +416,16 @@ Pick Components uses Shadow DOM and native `<slot>` elements for content project
 
 **How it works:**
 
-1. All Pick Components attach a Shadow DOM (`mode: 'open'`) on `connectedCallback`.
-2. The template is rendered inside the Shadow Root — `<slot>` elements are native placeholders.
+1. Standard Pick Components render into an open `ShadowRoot` by default.
+2. In that mode, the template is rendered inside the ShadowRoot and `<slot>` elements are native placeholders.
 3. Light DOM children declared with `slot="name"` are projected by the browser into the matching `<slot name="name">`.
 4. Unassigned Light DOM children go into the unnamed default `<slot>`.
 5. If a `<slot>` has inner content, it serves as the fallback when no matching Light DOM children exist.
-6. No framework code is needed — the browser handles projection natively and efficiently.
+6. When a component is forced into anchored/light-DOM rendering under a restrictive parent, native Shadow DOM slot projection does not apply for that render target.
 
 **Styles and Shadow DOM:**
 
-Component styles declared in metadata `styles` are injected as a `<style>` element prepended to the Shadow Root on every render. Shadow DOM encapsulation ensures they never leak to the global document.
+Component styles declared in metadata `styles` are prepended to the active target root, and shared constructed stylesheets may also be applied via `adoptedStyleSheets` when that target is a ShadowRoot. True encapsulation applies only when the render target is actually a ShadowRoot; anchored/light-DOM rendering does not provide the same style boundary.
 
 Key CSS patterns:
 
@@ -455,7 +461,7 @@ See [templates.md](templates.md) for full CSS styling guide including `:host`, `
 
 ### SkeletonRenderer
 
-Shows a loading state immediately while async work runs:
+Shows a loading state immediately while async work runs, except when compatible prerendered markup is being adopted:
 
 1. Uses `metadata.skeleton` if provided (validated by `SkeletonValidator`).
 2. Falls back to a built-in animated 3-dot skeleton (cached, reused across components).
@@ -466,7 +472,7 @@ Shows a loading state immediately while async work runs:
 
 When initialization or rendering fails:
 
-1. Tries `metadata.errorTemplate` with reactive `{{...}}` bindings against the component/error context.
+1. Tries `metadata.errorTemplate`, resolving component-backed `{{...}}` expressions and replacing `{{message}}` safely as text.
 2. Falls back to a simple overlay listing the error message.
 
 ---
@@ -475,12 +481,12 @@ When initialization or rendering fails:
 
 | Pattern                       | Where used                                                                                                       |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Factory**                   | `ExpressionParserFactory`, `TemplateProviderFactory`, `DomContextFactory`, `TemplateCompilerFactory`             |
+| **Factory**                   | `TemplateProviderFactory`, `DomContextFactory`, `TransparentHostFactory`, `PickElementFactory`                   |
 | **Registry**                  | `ComponentMetadataRegistry`, `ComponentInstanceRegistry`, `ManagedElementRegistry`, `ObjectRegistry`             |
 | **Observer / Subscription**   | `BindingResolver` subscribes to `getPropertyObservable(prop)`                                                    |
-| **Strategy**                  | `OutletResolver` (3 strategies), `SkeletonRenderer` (custom vs. default)                                         |
-| **Façade**                    | `ExpressionParserService` over tokenizer + parser + cache                                                        |
-| **Pipeline**                  | `RenderPipeline` sequential 6-step execution                                                                     |
-| **Dependency Inversion**      | All constructors receive interfaces; concretions wired in `framework-bootstrap.ts`                               |
+| **Strategy**                  | `OutletResolver`, `SkeletonRenderer`, `DefaultPrerenderAdoptionDecider`                                          |
+| **Façade**                    | `ExpressionParserService` over tokenizer + parser + evaluator                                                    |
+| **Pipeline**                  | `RenderPipeline` orchestrates compile/adopt, DOM mounting, listeners, and lifecycle                              |
+| **Dependency Inversion**      | Constructors depend on interfaces; concrete implementations are wired in `framework-bootstrap.ts`                |
 | **WeakMap for memory safety** | `ManagedElementRegistry`, `ObjectRegistry`, `DomContextHostResolver`                                             |
 | **1:1 element-to-instance**   | `ComponentInstanceRegistry` keyed by `contextId`                                                                 |

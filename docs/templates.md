@@ -10,7 +10,8 @@ Pick Components uses an HTML-aware template system with two active runtime diale
 ## Extraction rules
 
 - Parsed contexts: text nodes and attribute values.
-- Excluded contexts: tag names, attribute names, `<script>`, `<style>`, `<template>`, HTML comments, event handler attributes, `style` attribute.
+- Excluded contexts: tag names, attribute names, `<script>`, `<style>`, `<template>`, HTML comments, event handler attributes, `style` attribute, `srcdoc` attribute.
+- URL attributes with dynamic bindings, such as `href`, `src`, and `formaction`, are written only when the resolved value uses a safe URL shape: relative URLs or `http:`, `https:`, `mailto:`, or `tel:`.
 
 Example (allowed):
 

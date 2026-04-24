@@ -80,4 +80,53 @@ test.describe("Browser-ready distribution", () => {
     // Assert
     await expect(page.locator("#status")).toHaveText("ready");
   });
+
+  test("should project Pick component children through native named and default slots", async ({
+    page,
+  }) => {
+    // Arrange
+    const slotUrl = `${baseUrl}/tests/fixtures/browser/slot-projection.html`;
+
+    // Act
+    await page.goto(slotUrl);
+
+    // Assert
+    await expect(page.locator("#status")).toHaveText("ready");
+
+    const projection = await page.evaluate(() => {
+      const shell = document.querySelector("pick-slot-shell");
+      const headerSlot = shell?.shadowRoot?.querySelector(
+        'slot[name="header"]',
+      ) as HTMLSlotElement | null;
+      const defaultSlot = shell?.shadowRoot?.querySelector(
+        "slot:not([name])",
+      ) as HTMLSlotElement | null;
+      const headerChild = headerSlot?.assignedElements()[0] as HTMLElement;
+      const bodyChild = defaultSlot?.assignedElements()[0] as HTMLElement;
+
+      return {
+        shellHasShadowRoot: Boolean(shell?.shadowRoot),
+        headerAssignedTag: headerChild?.tagName.toLowerCase() ?? null,
+        headerAssignedSlot: headerChild?.getAttribute("slot") ?? null,
+        headerText:
+          headerChild?.shadowRoot?.querySelector("#title-output")
+            ?.textContent ?? null,
+        bodyAssignedTag: bodyChild?.tagName.toLowerCase() ?? null,
+        bodyAssignedSlot: bodyChild?.getAttribute("slot") ?? null,
+        bodyText:
+          bodyChild?.shadowRoot?.querySelector("#body-output")?.textContent ??
+          null,
+      };
+    });
+
+    expect(projection).toEqual({
+      shellHasShadowRoot: true,
+      headerAssignedTag: "pick-slot-title",
+      headerAssignedSlot: "header",
+      headerText: "Projected Header",
+      bodyAssignedTag: "pick-slot-body",
+      bodyAssignedSlot: null,
+      bodyText: "Projected Body",
+    });
+  });
 });

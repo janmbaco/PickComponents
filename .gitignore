@@ -56,3 +56,4 @@ examples/reflect-metadata.js
 examples/injectkit.esm.js
 examples/pick-components.esm.js
 examples/pick-components-bootstrap.esm.js
+.gitignore

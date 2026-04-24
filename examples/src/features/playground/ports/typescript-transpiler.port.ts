@@ -1,3 +1,5 @@
+import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
+
 /**
  * Declares the TypeScript standalone global loaded on demand via a script tag.
  * This avoids bundling the ~9 MB TypeScript compiler into the examples bundle.
@@ -36,7 +38,7 @@ export class BrowserTypeScriptTranspilerPort implements ITypeScriptTranspilerPor
     }
     tsLoadPromise = new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "/vendor/typescript-standalone.js";
+      script.src = withPlaygroundBasePath("/vendor/typescript-standalone.js");
       script.onload = () => resolve();
       script.onerror = () =>
         reject(new Error("Failed to load TypeScript standalone"));

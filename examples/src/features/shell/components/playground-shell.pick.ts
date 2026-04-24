@@ -16,6 +16,7 @@ import {
   PLAYGROUND_SHELL_STYLES,
   PLAYGROUND_SHELL_TEMPLATE,
 } from "./playground-shell.view.js";
+import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
 
 @PickRender({
   selector: "playground-shell",
@@ -35,10 +36,11 @@ import {
 export class PlaygroundShell extends PickComponent {
   @Reactive locale = "en";
   @Reactive currentPath = "/";
-  @Reactive activeExampleSrc =
-    "/playground-examples/01-hello/en-light/hello.example.ts";
-  @Reactive esPath = "/es";
-  @Reactive enPath = "/en";
+  @Reactive activeExampleSrc = withPlaygroundBasePath(
+    "/playground-examples/01-hello/en-light/hello.example.ts",
+  );
+  @Reactive esPath = withPlaygroundBasePath("/es");
+  @Reactive enPath = withPlaygroundBasePath("/en");
   @Reactive navigationGroups: PlaygroundNavigationGroup[] = [];
   @Reactive themeMode: ThemeMode = "auto";
   @Reactive themeIcon = "⊙";

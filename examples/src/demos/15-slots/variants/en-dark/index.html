@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        --slot-surface: #1f2937;
+        --slot-border: #3f4a5f;
+        --slot-text: #e5e7eb;
+        --slot-heading: #f8fafc;
+        --slot-muted: #cbd5e1;
+        --slot-accent: #5eead4;
+        --slot-status-bg: #431407;
+        --slot-status-border: #9a3412;
+        --slot-status-text: #fed7aa;
+
+        margin: 0;
+        padding: 1rem;
+        background: #111827;
+      }
+    </style>
+    <script type="module">
+      import { bootstrapFramework, Services } from "pick-components";
+      import "./slots.example.js";
+      await bootstrapFramework(Services);
+    </script>
+  </head>
+  <body>
+    <slot-panel>
+      <slot-heading
+        slot="header"
+        eyebrow="Header slot"
+        title="Title projected from a Pick child"
+      ></slot-heading>
+
+      <slot-message
+        text="This text lives in another Pick component and lands in the parent panel's default slot."
+      ></slot-message>
+
+      <slot-status slot="actions" label="Projected actions"></slot-status>
+    </slot-panel>
+  </body>
+</html>

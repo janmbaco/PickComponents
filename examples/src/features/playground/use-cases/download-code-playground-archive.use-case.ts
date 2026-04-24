@@ -8,6 +8,7 @@ import type {
   IPlaygroundDownloadPort,
   PlaygroundArchiveEntry,
 } from "../ports/playground-download.port.js";
+import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
 
 export async function downloadCodePlaygroundArchive(
   session: CodePlaygroundSessionState,
@@ -262,26 +263,34 @@ async function loadRuntimeArchiveEntries({
   if (needsFrameworkRuntime) {
     entries.push({
       name: "vendor/pick-components.js",
-      content: await fetchRequiredText("/vendor/pick-components.js"),
+      content: await fetchRequiredText(
+        withPlaygroundBasePath("/vendor/pick-components.js"),
+      ),
     });
   }
 
   entries.push({
     name: "vendor/typescript-standalone.js",
-    content: await fetchRequiredText("/vendor/typescript-standalone.js"),
+    content: await fetchRequiredText(
+      withPlaygroundBasePath("/vendor/typescript-standalone.js"),
+    ),
   });
 
   if (needsFrameworkBootstrap) {
     entries.push({
       name: "vendor/pick-components-bootstrap.js",
-      content: await fetchRequiredText("/vendor/pick-components-bootstrap.js"),
+      content: await fetchRequiredText(
+        withPlaygroundBasePath("/vendor/pick-components-bootstrap.js"),
+      ),
     });
   }
 
   if (needsInjectKit) {
     entries.push({
       name: "vendor/injectkit.js",
-      content: await fetchRequiredText("/vendor/injectkit.js"),
+      content: await fetchRequiredText(
+        withPlaygroundBasePath("/vendor/injectkit.js"),
+      ),
     });
   }
 

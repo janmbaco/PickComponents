@@ -3,6 +3,8 @@
 > A lightweight, reactive web components framework for TypeScript and modern browser ESM.  
 > Business logic stays in services. Components are pure presentation.
 
+Try the live playground: <https://janmbaco.github.io/PickComponents/>
+
 [![npm](https://img.shields.io/npm/v/pick-components)](https://www.npmjs.com/package/pick-components)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue)](https://www.typescriptlang.org/)
@@ -11,15 +13,35 @@
 
 ## Features
 
-- **Signal-based reactivity** — Per-property observables; only affected DOM nodes update.
-- **Component intent signals** — Typed point-in-time actions for lifecycle managers, without `requestVersion++` counters.
-- **No virtual DOM** — Surgical DOM updates via direct subscriptions.
-- **Two authoring styles** — Inline `@Pick` for quick components; class-based `@PickRender` for full control.
+- **Signal-based reactivity** — Per-property signals; only bindings that depend on changed state re-run.
+- **Component intent signals** — Typed one-shot actions like save, refresh, or mode change, kept separate from render state.
+- **No virtual DOM** — Direct subscriptions update text nodes and attributes in place.
+- **Two authoring styles** — Inline `@Pick` for compact components; class-based `@PickRender` for explicit structure.
+- **Built-in UI primitives** — `<pick-for>`, `<pick-select>`, `<pick-action>`, `<pick-link>`, and `<pick-router>` cover lists, branching, actions, and navigation.
 - **Native slot projection** — Named and default `<slot>` elements for composable layouts via Shadow DOM.
 - **Factory-first DI** — Explicit dependency injection through factory functions; no hidden service construction.
-- **Security-first expression evaluator** — Deterministic AST pipeline; no `eval` or `new Function`. Whitelisted method calls only.
+- **Security-first expression evaluator** — Deterministic AST pipeline; no `eval` or `new Function`. Whitelisted read-only method calls only.
+- **SEO-friendly prerender adoption** — HTML-first delivery with compatible prerendered markup adopted on the client.
 - **Tiny footprint** — Zero runtime dependencies.
-- **Browser-ready distribution** — Published ESM build for direct `<script type="module">` usage.
+- **Browser-ready ESM releases** — GitHub release artifacts can be loaded directly with `<script type="module">`.
+
+---
+
+## Why Pick Components Exists
+
+Web frontend is not my full-time work. But every now and then I end up building something for the web — a personal project, something small, or a tool for a friend — and every time I step into that world I get the same feeling: too many layers, too many frameworks, too many libraries piled on top of each other, and not enough sense that I can still see the project from the ground up. At some point, it starts to feel like something is off.
+
+Pick Components came from that feeling. It did not come from “I want to build another framework”, and it definitely did not come from any desire to compete with React, Angular, or Vue. It came from wanting something useful for my own needs: a way to build native Web Components with clearer boundaries, controlled templates, and less dependence on large runtimes.
+
+This idea is older than this repository. More than five years ago, in `FieldDocumentMaker`, inside `FieldDocumentMaker.Editor/src/components`, I had a base component that already contained the first rough shape of this idea. One intuition from that code never really left me: in JavaScript, `a.b` and `a["b"]` are just two ways of reaching the same property. That changed how I thought about UI. Less “just run code here”, more “resolve this from structure”.
+
+That old component already had early versions of ideas that later became central to this project: `{{...}}` template bindings, property-based bindings, reactive DOM updates, and a small DOM/template compilation step. What it still lacked was a cleaner architecture and a harder line around what templates were allowed to do.
+
+Over time, that became a design rule. I wanted expressions in templates, but I did not want `eval`, `new Function`, or arbitrary JavaScript running inside templates. That decision pushed the project toward parsing a limited expression language, building an AST, and evaluating it under explicit rules. A lot of what Pick Components is today comes from taking that idea seriously instead of treating templates as a place where anything goes.
+
+Language models helped a lot while building this. Not just as code generators — which they also were, thank God — but for exploring architecture, testing ideas, refactoring, formalizing vague intuitions, and speeding up implementation and documentation. The direction still had to come from me, but they made it much easier to iterate on the design of the framework.
+
+That is why I built Pick Components: to build native Web Components with a more explicit internal architecture, controlled templates, reactive state, a clear lifecycle, and less dependence on large runtimes. If that sounds useful, try it, read the code, question the design, open issues, and contribute if you want to help shape it.
 
 ---
 
@@ -127,8 +149,7 @@ Pick Components works with both TypeScript decorator emits:
 - Standard decorators: `experimentalDecorators` omitted or `false`.
 - Legacy decorators: `experimentalDecorators: true`.
 
-You should not need to change a Vite/TypeScript project just to use
-Pick Components. The default bootstrap accepts both modes.
+You should not need to change a Vite/TypeScript project just to use Pick Components. The default bootstrap accepts both modes.
 
 Recommended public syntax:
 
@@ -138,8 +159,7 @@ class Counter extends PickComponent {
 }
 ```
 
-`@Reactive accessor count = 0` is still supported for users who explicitly want
-TC39 auto-accessors, but it is not required.
+`@Reactive accessor count = 0` is still supported for users who explicitly want TC39 auto-accessors, but it is not required.
 
 The playground and downloaded examples transpile with this compiler shape:
 
@@ -153,15 +173,13 @@ The playground and downloaded examples transpile with this compiler shape:
 }
 ```
 
-If your project uses TypeScript's `experimentalDecorators` pipeline, the default
-bootstrap already supports it:
+If your project uses TypeScript's `experimentalDecorators` pipeline, the default bootstrap already supports it:
 
 ```typescript
 await bootstrapFramework(Services);
 ```
 
-Strict decorator mode is available only when you intentionally want to accept
-TC39 standard decorators only:
+Strict decorator mode is available only when you intentionally want to accept TC39 standard decorators only:
 
 ```typescript
 await bootstrapFramework(Services, {}, { decorators: "strict" });
@@ -171,8 +189,7 @@ await bootstrapFramework(Services, {}, { decorators: "strict" });
 
 ## Bootstrap
 
-Call `bootstrapFramework()` once in your entry point before component modules
-that use `@Pick`, `@PickRender`, `@Reactive`, or `@Listen` are evaluated:
+Call `bootstrapFramework()` once in your entry point before component modules that use `@Pick`, `@PickRender`, `@Reactive`, or `@Listen` are evaluated:
 
 ```typescript
 import { bootstrapFramework, Services } from "pick-components";
@@ -288,8 +305,7 @@ export class SimpleCounter {}
 
 ### Class-Based Component (`@PickRender`)
 
-For components that need async initialization or a lifecycle manager to wire
-external services.
+For components that need async initialization or a lifecycle manager to wire external services.
 
 ```typescript
 import {
@@ -338,8 +354,7 @@ export class TodoList extends PickComponent {
 
 ## Component Intentions
 
-Use `@Reactive` for state that renders. Use intent signals for punctual user
-actions that a lifecycle manager should coordinate with services.
+Use `@Reactive` for state that renders. Use intent signals for one-shot user actions such as save, refresh, or mode change, which a lifecycle manager can coordinate with services.
 
 ```typescript
 class ModeSelector extends PickComponent {
@@ -363,17 +378,13 @@ class ModeSelectorLifecycle extends PickLifecycleManager<ModeSelector> {
 }
 ```
 
-`@Pick` has the same capability through `ctx.intent<T>("name$")`. Prefer this
-pattern for actions and commands; keep `getPropertyObservable()` for real state
-changes.
+`@Pick` has the same capability through `ctx.intent<T>("name$")`. Prefer this pattern for actions and commands; keep `getPropertyObservable()` for real state changes.
 
 ---
 
 ## View Actions
 
-`<pick-action>` is the declarative bridge from view markup to component actions.
-It listens to click and keyboard activation on its child content, then dispatches
-a `pick-action` event that the nearest PickComponent handles.
+`<pick-action>` is the declarative bridge from view markup to component actions. It listens to click and keyboard activation on its child content, then dispatches a `pick-action` event that the nearest PickComponent handles.
 
 ```html
 <pick-action action="archive" value="{{selectedId}}">
@@ -395,7 +406,6 @@ a `pick-action` event that the nearest PickComponent handles.
 | Syntax              | Description                                               |
 | ------------------- | --------------------------------------------------------- |
 | `{{expression}}`    | Reactive binding — re-evaluates on property change        |
-| `[[Namespace.KEY]]` | Static constant — inlined at compile time                 |
 | `[[RULES.field]]`   | Validation rules — expands to HTML5 validation attributes |
 | `<slot>`            | Default projection slot (native Shadow DOM)               |
 | `<slot name="X">`   | Named projection slot (native Shadow DOM)                 |
@@ -425,10 +435,9 @@ a `pick-action` event that the nearest PickComponent handles.
 
 ## Interactive Playground
 
-The project ships with 14 interactive examples that run in the browser via a
-TypeScript playground with live preview. Each example has an editable code panel
-(CodeMirror) and an iframe sandbox that re-transpiles and re-executes on every
-change.
+The project ships with 15 interactive examples that run in the browser via a TypeScript playground with live preview. Each example has an editable code panel (CodeMirror) and an iframe sandbox that re-transpiles and re-executes on every change.
+
+Try it online: <https://janmbaco.github.io/PickComponents/>
 
 ### Running the playground
 
@@ -445,10 +454,7 @@ npm run build
 npm run serve:dist   # http://localhost:8080
 ```
 
-The playground also includes an edge worker template at
-`deploy/cloudflare/public-route-worker.mjs`. It serves prerendered public routes
-first, then falls back to the SPA shell for app-only paths. Crawler and browser
-requests receive the same canonical HTML; the client bundle only enhances it.
+The playground also includes an edge worker template at `deploy/cloudflare/public-route-worker.mjs`. It serves prerendered public routes first, then falls back to the SPA shell for app-only paths. Crawler and browser requests receive the same canonical HTML; the client bundle only enhances it.
 
 ### Examples
 
@@ -469,6 +475,7 @@ requests receive the same canonical HTML; the client bundle only enhances it.
 | 12  | Real API                  | Architecture | Initializer + lifecycle + `createIntent()`       |
 | 13  | Dashboard                 | Architecture | Multi-service composition and split template/CSS |
 | 14  | @Pick Advanced           | Architecture | Full `@Pick` component with services & state    |
+| 15  | Native Slots              | Basics       | Native named and default slot projection         |
 
 ### Docker deployment
 
@@ -485,12 +492,12 @@ docker run -p 8080:8080 pick-components
 
 | Document                                                                     | Description                                                  |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [docs/DEPENDENCY-INJECTION.md](docs/DEPENDENCY-INJECTION.md)                 | DI architecture and service registry                         |
-| [docs/FRAMEWORK-COMPARISON.md](docs/FRAMEWORK-COMPARISON.md)                 | How Pick Components compares with other UI frameworks         |
 | [docs/PICK-VS-PICKRENDER.md](docs/PICK-VS-PICKRENDER.md)                     | When to use `@Pick` vs `@PickRender`                       |
+| [docs/PICK-VS-PICKRENDER.es.md](docs/PICK-VS-PICKRENDER.es.md)               | Cuando usar `@Pick` frente a `@PickRender`                   |
 | [docs/SEO.md](docs/SEO.md)                                                   | SEO-compatible prerendering and public route delivery         |
+| [docs/SEO.es.md](docs/SEO.es.md)                                             | Prerender compatible con SEO y entrega de rutas publicas      |
 | [docs/RENDERING-ARCHITECTURE.md](docs/RENDERING-ARCHITECTURE.md)             | Rendering pipeline overview                                  |
-| [docs/RENDERING-PIPELINE-DEEP-DIVE.md](docs/RENDERING-PIPELINE-DEEP-DIVE.md) | Expression parsing, binding resolution, reactivity internals |
+| [docs/RENDERING-ARCHITECTURE.es.md](docs/RENDERING-ARCHITECTURE.es.md)       | Vista general de la arquitectura de renderizado               |
 | [docs/templates.md](docs/templates.md)                                       | Template system reference                                    |
 
 ---

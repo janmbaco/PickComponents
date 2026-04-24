@@ -3,6 +3,10 @@ import type {
   InterpolableFragment,
 } from "./interpolable-content-selector.interface.js";
 import type { ParsedNode } from "./html-fragment-parser.interface.js";
+import {
+  defaultAttributeBindingPolicy,
+  type IAttributeBindingPolicy,
+} from "./attribute-binding-policy.js";
 
 type ParsedTag = {
   readonly name: string;
@@ -41,8 +45,10 @@ type ParsedTag = {
  */
 export class SafeContentSelector implements IInterpolableContentSelector {
   private readonly excludedElements = new Set(["script", "style", "template"]);
-  private readonly excludedAttributePrefix = "on";
-  private readonly excludedAttributes = new Set(["style"]);
+
+  constructor(
+    private readonly attributePolicy: IAttributeBindingPolicy = defaultAttributeBindingPolicy,
+  ) {}
 
   /**
    * Extracts interpolable fragments from a normalized HTML fragment.
@@ -121,29 +127,7 @@ export class SafeContentSelector implements IInterpolableContentSelector {
   }
 
   private isAttributeAllowed(attrName: string): boolean {
-    if (attrName.startsWith(this.excludedAttributePrefix)) {
-      return false;
-    }
-
-    if (this.excludedAttributes.has(attrName)) {
-      return false;
-    }
-
-    if (this.looksLikeInterpolation(attrName)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  private looksLikeInterpolation(attrName: string): boolean {
-    return (
-      attrName.includes("{{") ||
-      attrName.includes("}}") ||
-      attrName.includes("${") ||
-      attrName.includes("[[") ||
-      attrName.includes("]]")
-    );
+    return this.attributePolicy.canExtractFromAttribute(attrName);
   }
 
   private looksLikeHtmlStructure(textValue: string): boolean {

@@ -1,4 +1,5 @@
 import { PickComponent, PickRender, Reactive } from "pick-components";
+import { withPlaygroundBasePath } from "../models/playground-public-path.js";
 
 @PickRender({
   selector: "playground-route-view",
@@ -26,6 +27,7 @@ import { PickComponent, PickRender, Reactive } from "pick-components";
 })
 export class PlaygroundRouteView extends PickComponent {
   @Reactive locale = "en";
-  @Reactive src =
-    "/playground-examples/01-hello/en-light/hello.example.ts";
+  @Reactive src = withPlaygroundBasePath(
+    "/playground-examples/01-hello/en-light/hello.example.ts",
+  );
 }

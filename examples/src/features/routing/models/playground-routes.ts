@@ -1,3 +1,8 @@
+import {
+  stripPlaygroundBasePath,
+  withPlaygroundBasePath,
+} from "./playground-public-path.js";
+
 export const PLAYGROUND_LOCALES = ["es", "en"] as const;
 export type PlaygroundLocale = (typeof PLAYGROUND_LOCALES)[number];
 
@@ -17,6 +22,7 @@ export const PLAYGROUND_EXAMPLE_IDS = [
   "12-api",
   "13-dashboard",
   "14-pick",
+  "15-slots",
 ] as const;
 
 export type ExampleId = (typeof PLAYGROUND_EXAMPLE_IDS)[number];
@@ -32,32 +38,32 @@ export function resolvePlaygroundLocale(
 }
 
 export function hasPlaygroundLocalePrefix(pathname: string): boolean {
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = stripPlaygroundBasePath(pathname).split("/").filter(Boolean);
   return segments[0] === "es" || segments[0] === "en";
 }
 
 export function localeFromPlaygroundPath(pathname: string): PlaygroundLocale {
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = stripPlaygroundBasePath(pathname).split("/").filter(Boolean);
   return resolvePlaygroundLocale(segments[0]);
 }
 
 export function exampleIdFromPlaygroundPath(
   pathname: string,
 ): ExampleId | null {
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = stripPlaygroundBasePath(pathname).split("/").filter(Boolean);
   const candidate = segments[1];
   return EXAMPLE_ID_SET.has(candidate) ? (candidate as ExampleId) : null;
 }
 
 export function buildPlaygroundHomePath(locale: PlaygroundLocale): string {
-  return `/${locale}`;
+  return withPlaygroundBasePath(`/${locale}`);
 }
 
 export function buildExamplePath(
   locale: PlaygroundLocale,
   exampleId: ExampleId,
 ): string {
-  return `/${locale}/${exampleId}`;
+  return withPlaygroundBasePath(`/${locale}/${exampleId}`);
 }
 
 export function translatePlaygroundPath(

@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pick Components — Playground</title>
     <script>
+      window.__PICK_PLAYGROUND_BASE_PATH__ = (function () {
+        var first = window.location.pathname.split("/").filter(Boolean)[0];
+        return first && first !== "es" && first !== "en" ? "/" + first : "";
+      })();
       (function () {
         let t = localStorage.getItem("pc-theme");
         if (t === "light" || t === "dark") {
@@ -12,7 +16,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="/pico.min.css" />
+    <link rel="stylesheet" href="./pico.min.css" />
     <style>
       /* ── Playground CSS custom properties ─────────────── */
       :root {
@@ -147,8 +151,19 @@
           <h2>Welcome / Bienvenido</h2>
           <p>Select a language to explore the interactive playground:</p>
           <div class="lang-btns">
-            <a href="/es/01-hello" role="button">Español</a>
-            <a href="/en/01-hello" role="button" class="secondary">English</a>
+            <a href="./es/01-hello" role="button">Español</a>
+            <a href="./en/01-hello" role="button" class="secondary">English</a>
+          </div>
+        </div>
+      </template>
+
+      <template data-route="/:base">
+        <div class="welcome">
+          <h2>Welcome / Bienvenido</h2>
+          <p>Select a language to explore the interactive playground:</p>
+          <div class="lang-btns">
+            <a href="./es/01-hello" role="button">Español</a>
+            <a href="./en/01-hello" role="button" class="secondary">English</a>
           </div>
         </div>
       </template>
@@ -158,6 +173,6 @@
       </template>
     </pick-router>
 
-    <script type="module" src="/bundle.js"></script>
+    <script type="module" src="./bundle.js"></script>
   </body>
 </html>

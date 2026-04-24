@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pick Slot Projection</title>
+  </head>
+  <body>
+    <div id="status">pending</div>
+
+    <pick-slot-shell id="shell">
+      <pick-slot-title
+        id="projected-title"
+        slot="header"
+        text="Projected Header"
+      ></pick-slot-title>
+      <pick-slot-body
+        id="projected-body"
+        text="Projected Body"
+      ></pick-slot-body>
+    </pick-slot-shell>
+
+    <script type="module">
+      const status = document.getElementById("status");
+
+      try {
+        const {
+          bootstrapFramework,
+          Services,
+          PickComponent,
+          PickRender,
+        } = await import("../../../dist/browser/pick-components.js");
+
+        await bootstrapFramework(Services);
+
+        class PickSlotShell extends PickComponent {}
+        PickRender({
+          selector: "pick-slot-shell",
+          template: `
+            <article id="shell-root">
+              <header id="header-region">
+                <slot name="header">Fallback Header</slot>
+              </header>
+              <main id="body-region">
+                <slot>Fallback Body</slot>
+              </main>
+            </article>
+          `,
+        })(PickSlotShell);
+
+        class PickSlotTitle extends PickComponent {
+          text = "";
+        }
+        PickRender({
+          selector: "pick-slot-title",
+          template: `<h2 id="title-output">{{text}}</h2>`,
+        })(PickSlotTitle);
+
+        class PickSlotBody extends PickComponent {
+          text = "";
+        }
+        PickRender({
+          selector: "pick-slot-body",
+          template: `<p id="body-output">{{text}}</p>`,
+        })(PickSlotBody);
+
+        await Promise.all([
+          customElements.whenDefined("pick-slot-shell"),
+          customElements.whenDefined("pick-slot-title"),
+          customElements.whenDefined("pick-slot-body"),
+        ]);
+
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        status.textContent = "ready";
+      } catch (error) {
+        status.textContent =
+          error instanceof Error ? error.message : String(error);
+      }
+    </script>
+  </body>
+</html>

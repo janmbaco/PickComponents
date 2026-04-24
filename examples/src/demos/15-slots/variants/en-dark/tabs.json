@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "file": "slots.example.ts", "label": "Component" },
+    { "file": "slots.styles.css", "label": "Styles" },
+    { "file": "index.html", "label": "Mount" }
+  ]
+}

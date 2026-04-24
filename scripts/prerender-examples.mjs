@@ -8,7 +8,14 @@ const scriptsDir = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = join(scriptsDir, "..");
 const examplesDir = join(rootDir, "examples");
 
-const SITE_ORIGIN = "https://pickcomponents.com";
+const PUBLIC_BASE_PATH = normalizePlaygroundBasePath(
+  process.env.PLAYGROUND_BASE_PATH ?? process.env.PUBLIC_BASE_PATH ?? "",
+);
+globalThis.__PICK_PLAYGROUND_BASE_PATH__ = PUBLIC_BASE_PATH;
+
+const SITE_ORIGIN = normalizeSiteOrigin(
+  process.env.PLAYGROUND_SITE_ORIGIN ?? "https://pickcomponents.com",
+);
 const LIGHT_THEME = "light";
 
 const COPY = {
@@ -133,11 +140,13 @@ async function renderDocument({ locale, path, example }) {
   const description = example
     ? `${example.labels[locale]}: ${copy.kinds[example.kind]}`
     : copy.homeDescription;
-  const canonicalUrl = `${SITE_ORIGIN}${path}`;
+  const publicPath = withPlaygroundBasePath(path);
+  const canonicalUrl = `${SITE_ORIGIN}${publicPath}`;
   const alternateLocale = locale === "es" ? "en" : "es";
   const alternatePath = example
     ? `/${alternateLocale}/${example.id}`
     : `/${alternateLocale}`;
+  const publicAlternatePath = withPlaygroundBasePath(alternatePath);
   const state = buildSerializedState({ locale, path, example });
 
   return `<!doctype html>
@@ -148,9 +157,10 @@ async function renderDocument({ locale, path, example }) {
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
     <link rel="canonical" href="${canonicalUrl}" />
-    <link rel="alternate" hreflang="${alternateLocale}" href="${SITE_ORIGIN}${alternatePath}" />
+    <link rel="alternate" hreflang="${alternateLocale}" href="${SITE_ORIGIN}${publicAlternatePath}" />
     <link rel="alternate" hreflang="${locale}" href="${canonicalUrl}" />
     <script>
+      window.__PICK_PLAYGROUND_BASE_PATH__ = ${JSON.stringify(PUBLIC_BASE_PATH)};
       (function () {
         document.documentElement.setAttribute("data-pick-enhancing", "true");
         let t = localStorage.getItem("pc-theme");
@@ -159,7 +169,7 @@ async function renderDocument({ locale, path, example }) {
         }
       })();
     </script>
-    <link rel="stylesheet" href="/pico.min.css" />
+    <link rel="stylesheet" href="${withPlaygroundBasePath("/pico.min.css")}" />
     <style>${renderPublicStyles()}</style>
   </head>
   <body>
@@ -167,7 +177,7 @@ async function renderDocument({ locale, path, example }) {
     <script type="application/json" data-pick-state data-pick-for="playground-shell">${escapeScriptJson(
       state,
     )}</script>
-    <script type="module" src="/bundle.js"></script>
+    <script type="module" src="${withPlaygroundBasePath("/bundle.js")}"></script>
   </body>
 </html>
 `;
@@ -180,10 +190,18 @@ async function renderBody({ locale, path, example }) {
   const activeExampleSrc = activeExample.variantSrcs[locale][LIGHT_THEME];
   const navigationGroups = buildPlaygroundNavigation(locale, LIGHT_THEME);
   const theme = buildPlaygroundThemeViewState(locale, "auto", LIGHT_THEME);
-  const esPath = example ? `/es/${activeExample.id}` : "/es";
-  const enPath = example ? `/en/${activeExample.id}` : "/en";
+  const esPath = withPlaygroundBasePath(
+    example ? `/es/${activeExample.id}` : "/es",
+  );
+  const enPath = withPlaygroundBasePath(
+    example ? `/en/${activeExample.id}` : "/en",
+  );
   const languageLinks = renderLanguageLinks(locale, activeExample, example);
-  const sidebar = renderSidebar({ locale, navigationGroups, currentPath });
+  const sidebar = renderSidebar({
+    locale,
+    navigationGroups,
+    currentPath: withPlaygroundBasePath(currentPath),
+  });
   const main = example
     ? await renderExampleMain(locale, example)
     : renderHomeMain(locale);
@@ -200,7 +218,7 @@ async function renderBody({ locale, path, example }) {
       <div class="pg-shell" data-pick-prerender-root="true">
         <div class="pg-topbar">
           <div class="brand">
-            <a href="/${locale}"><span>Pick</span>Components</a>
+            <a href="${withPlaygroundBasePath(`/${locale}`)}"><span>Pick</span>Components</a>
           </div>
           <div class="spacer"></div>
           <div class="controls">
@@ -237,8 +255,12 @@ async function renderBody({ locale, path, example }) {
 }
 
 function renderLanguageLinks(locale, activeExample, example) {
-  const esPath = example ? `/es/${activeExample.id}` : "/es";
-  const enPath = example ? `/en/${activeExample.id}` : "/en";
+  const esPath = withPlaygroundBasePath(
+    example ? `/es/${activeExample.id}` : "/es",
+  );
+  const enPath = withPlaygroundBasePath(
+    example ? `/en/${activeExample.id}` : "/en",
+  );
 
   return `
     <a href="${esPath}"${locale === "es" ? ' aria-current="page"' : ""}>ES</a>
@@ -325,7 +347,7 @@ function renderHomeMain(locale) {
         (example) => `<article>
           <h2>${escapeHtml(example.labels[locale])}</h2>
           <p>${escapeHtml(copy.kinds[example.kind])}</p>
-          <a href="/${locale}/${example.id}">${escapeHtml(copy.openExample)}</a>
+          <a href="${withPlaygroundBasePath(`/${locale}/${example.id}`)}">${escapeHtml(copy.openExample)}</a>
         </article>`,
       ).join("")}
     </div>
@@ -355,7 +377,10 @@ async function renderExampleMain(locale, example) {
 
 async function readExampleSource(example, locale) {
   const publicSrc = example.variantSrcs[locale][LIGHT_THEME];
-  const filePath = join(examplesDir, publicSrc.replace(/^\//u, ""));
+  const filePath = join(
+    examplesDir,
+    stripPlaygroundBasePath(publicSrc).replace(/^\//u, ""),
+  );
 
   if (!existsSync(filePath)) {
     return "";
@@ -368,10 +393,56 @@ function buildSerializedState({ locale, path, example }) {
   return {
     version: 1,
     locale,
-    currentPath: path,
+    currentPath: withPlaygroundBasePath(path),
     activeExampleId: example?.id ?? null,
     activeThemeVariant: LIGHT_THEME,
   };
+}
+
+function normalizePlaygroundBasePath(value) {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "/") {
+    return "";
+  }
+
+  return `/${trimmed.replace(/^\/+|\/+$/gu, "")}`;
+}
+
+function withPlaygroundBasePath(path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (!PUBLIC_BASE_PATH) {
+    return normalizedPath;
+  }
+
+  if (normalizedPath === "/") {
+    return `${PUBLIC_BASE_PATH}/`;
+  }
+
+  return `${PUBLIC_BASE_PATH}${normalizedPath}`;
+}
+
+function stripPlaygroundBasePath(path) {
+  if (!PUBLIC_BASE_PATH) {
+    return path;
+  }
+
+  if (path === PUBLIC_BASE_PATH) {
+    return "/";
+  }
+
+  if (path.startsWith(`${PUBLIC_BASE_PATH}/`)) {
+    return path.slice(PUBLIC_BASE_PATH.length);
+  }
+
+  return path;
+}
+
+function normalizeSiteOrigin(value) {
+  return value.replace(/\/+$/u, "");
 }
 
 function exampleSummary(locale, example) {

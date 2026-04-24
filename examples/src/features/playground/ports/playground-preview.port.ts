@@ -1,3 +1,5 @@
+import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
+
 export const PLAYGROUND_PREVIEW_PORT_TOKEN = "PlaygroundPreviewPort";
 
 export interface IPlaygroundPreviewPort {
@@ -15,9 +17,11 @@ export interface IPlaygroundPreviewPort {
 }
 
 const VENDOR_PATHS: Record<string, string> = {
-  "pick-components": "/vendor/pick-components.js",
-  "pick-components/bootstrap": "/vendor/pick-components-bootstrap.js",
-  injectkit: "/vendor/injectkit.js",
+  "pick-components": withPlaygroundBasePath("/vendor/pick-components.js"),
+  "pick-components/bootstrap": withPlaygroundBasePath(
+    "/vendor/pick-components-bootstrap.js",
+  ),
+  injectkit: withPlaygroundBasePath("/vendor/injectkit.js"),
 };
 
 async function loadVendorDataUrls(): Promise<Record<string, string>> {

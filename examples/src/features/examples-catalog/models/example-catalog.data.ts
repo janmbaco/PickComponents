@@ -2,6 +2,7 @@ import type {
   ExampleId,
   PlaygroundLocale,
 } from "../../routing/models/playground-routes.js";
+import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
 import type { PlaygroundThemeVariant } from "../../navigation/models/playground-theme.js";
 import type { PlaygroundCategoryId } from "./example-categories.js";
 
@@ -25,12 +26,20 @@ function buildVariantSrcs(
 ): Record<PlaygroundLocale, Record<PlaygroundThemeVariant, string>> {
   return {
     en: {
-      light: `/playground-examples/${exampleId}/en-light/${entryBaseName}.example.ts`,
-      dark: `/playground-examples/${exampleId}/en-dark/${entryBaseName}.example.ts`,
+      light: withPlaygroundBasePath(
+        `/playground-examples/${exampleId}/en-light/${entryBaseName}.example.ts`,
+      ),
+      dark: withPlaygroundBasePath(
+        `/playground-examples/${exampleId}/en-dark/${entryBaseName}.example.ts`,
+      ),
     },
     es: {
-      light: `/playground-examples/${exampleId}/es-light/${entryBaseName}.example.ts`,
-      dark: `/playground-examples/${exampleId}/es-dark/${entryBaseName}.example.ts`,
+      light: withPlaygroundBasePath(
+        `/playground-examples/${exampleId}/es-light/${entryBaseName}.example.ts`,
+      ),
+      dark: withPlaygroundBasePath(
+        `/playground-examples/${exampleId}/es-dark/${entryBaseName}.example.ts`,
+      ),
     },
   };
 }
@@ -158,5 +167,13 @@ export const PLAYGROUND_EXAMPLES: PlaygroundExampleDefinition[] = [
     kind: "feature",
     minTabs: 6,
     variantSrcs: buildVariantSrcs("14-pick", "pick"),
+  },
+  {
+    id: "15-slots",
+    labels: { es: "Slots Nativos", en: "Native Slots" },
+    category: "basics",
+    kind: "primitive",
+    minTabs: 3,
+    variantSrcs: buildVariantSrcs("15-slots", "slots"),
   },
 ];

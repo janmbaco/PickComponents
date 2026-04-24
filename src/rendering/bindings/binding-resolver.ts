@@ -6,6 +6,10 @@ import { NodeType } from "../dom/node-types.js";
 import { Unsubscribe } from "../../reactive/signal.js";
 import type { IDependencyTracker } from "../../reactive/dependency-tracker.interface.js";
 import type { IObjectRegistry } from "../../utils/object-registry.js";
+import {
+  defaultAttributeBindingPolicy,
+  type IAttributeBindingPolicy,
+} from "../templates/attribute-binding-policy.js";
 
 /**
  * Defines the responsibility of managing reactive state bindings in DOM elements.
@@ -73,6 +77,7 @@ export class BindingResolver implements IBindingResolver {
     managedElementResolver: IManagedElementResolver,
     dependencyTracker: IDependencyTracker,
     objectRegistry: IObjectRegistry,
+    private readonly attributePolicy: IAttributeBindingPolicy = defaultAttributeBindingPolicy,
   ) {
     if (!expressionResolver) throw new Error("ExpressionResolver is required");
     if (!propertyExtractor) throw new Error("PropertyExtractor is required");
@@ -80,6 +85,7 @@ export class BindingResolver implements IBindingResolver {
       throw new Error("ManagedElementResolver is required");
     if (!dependencyTracker) throw new Error("DependencyTracker is required");
     if (!objectRegistry) throw new Error("ObjectRegistry is required");
+    if (!attributePolicy) throw new Error("AttributeBindingPolicy is required");
 
     this.expressionResolver = expressionResolver;
     this.propertyExtractor = propertyExtractor;
@@ -154,6 +160,11 @@ export class BindingResolver implements IBindingResolver {
     if (usedProps.length === 0) return;
     if (!ownerElement) return;
 
+    if (!this.attributePolicy.canBindAttribute(attrName)) {
+      ownerElement.removeAttribute(attrName);
+      return;
+    }
+
     const isBooleanAttr = BOOLEAN_ATTRIBUTES.has(attrName);
 
     const updateAttr = () => {
@@ -183,6 +194,11 @@ export class BindingResolver implements IBindingResolver {
           value !== undefined &&
           (Array.isArray(value) || typeof value === "object")
         ) {
+          if (!this.attributePolicy.allowsObjectBinding(attrName)) {
+            ownerElement.removeAttribute(attrName);
+            return;
+          }
+
           const objectId = this.objectRegistry.set(value);
           ownerElement.setAttribute(attrName, objectId);
           return;
@@ -193,12 +209,23 @@ export class BindingResolver implements IBindingResolver {
         originalValue,
         component,
       );
+      const safeResolved = this.attributePolicy.sanitizeResolvedValue(
+        attrName,
+        resolved,
+        ownerElement,
+      );
+
+      if (safeResolved === null) {
+        ownerElement.removeAttribute(attrName);
+        return;
+      }
+
       if (isBooleanAttr) {
         const isTruthy =
-          resolved !== "" &&
-          resolved !== "false" &&
-          resolved !== "null" &&
-          resolved !== "undefined";
+          safeResolved !== "" &&
+          safeResolved !== "false" &&
+          safeResolved !== "null" &&
+          safeResolved !== "undefined";
         if (isTruthy) {
           ownerElement.setAttribute(attrName, "");
         } else {
@@ -209,7 +236,7 @@ export class BindingResolver implements IBindingResolver {
             isTruthy;
         }
       } else {
-        ownerElement.setAttribute(attrName, resolved);
+        ownerElement.setAttribute(attrName, safeResolved);
       }
     };
 

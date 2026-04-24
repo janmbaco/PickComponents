@@ -3,6 +3,7 @@ import {
   DEFAULT_EXAMPLE_ID,
   hasPlaygroundLocalePrefix,
 } from "../../routing/models/playground-routes.js";
+import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
 import { resolvePlaygroundRouteState } from "../../routing/services/playground-route-state.service.js";
 import { type PlaygroundExampleDefinition } from "../../examples-catalog/models/example-catalog.data.js";
 import {
@@ -29,12 +30,20 @@ const FALLBACK_PLAYGROUND_EXAMPLE: PlaygroundExampleDefinition = {
   minTabs: 2,
   variantSrcs: {
     en: {
-      light: "/playground-examples/01-hello/en-light/hello.example.ts",
-      dark: "/playground-examples/01-hello/en-dark/hello.example.ts",
+      light: withPlaygroundBasePath(
+        "/playground-examples/01-hello/en-light/hello.example.ts",
+      ),
+      dark: withPlaygroundBasePath(
+        "/playground-examples/01-hello/en-dark/hello.example.ts",
+      ),
     },
     es: {
-      light: "/playground-examples/01-hello/es-light/hello.example.ts",
-      dark: "/playground-examples/01-hello/es-dark/hello.example.ts",
+      light: withPlaygroundBasePath(
+        "/playground-examples/01-hello/es-light/hello.example.ts",
+      ),
+      dark: withPlaygroundBasePath(
+        "/playground-examples/01-hello/es-dark/hello.example.ts",
+      ),
     },
   },
 };

@@ -14,6 +14,7 @@
  */
 import { bootstrapFramework, Services } from "pick-components/bootstrap";
 import type { ISharedStylesRegistry } from "pick-components";
+import { withPlaygroundBasePath } from "./features/routing/models/playground-public-path.js";
 
 // ── 1. Bootstrap Pick Components framework ───────────────────────
 await bootstrapFramework(Services);
@@ -22,7 +23,7 @@ await bootstrapFramework(Services);
 const sharedStyles = Services.get<ISharedStylesRegistry>(
   "ISharedStylesRegistry",
 );
-const picoResponse = await fetch("/pico.min.css");
+const picoResponse = await fetch(withPlaygroundBasePath("/pico.min.css"));
 const picoCSS = await picoResponse.text();
 const picoSheet = new CSSStyleSheet();
 picoSheet.replaceSync(picoCSS);
