@@ -305,7 +305,12 @@ export class PickRouterElement extends HTMLElement {
     return true;
   }
 
-  private matchRoute(path: string): RouteMatch | null {
+  private matchRoute(rawPath: string): RouteMatch | null {
+    const path =
+      rawPath.length > 1 && rawPath.endsWith("/")
+        ? rawPath.slice(0, -1)
+        : rawPath;
+
     for (const route of this.routes) {
       if (route.path === path) {
         return { template: route.template, params: {} };
