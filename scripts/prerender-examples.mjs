@@ -1,7 +1,7 @@
 import * as esbuild from "esbuild";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptsDir = fileURLToPath(new URL(".", import.meta.url));
@@ -76,23 +76,33 @@ const PLAYGROUND_SHELL_TEMPLATE_HASH = computePickTemplateHash(
 
 let pagesWritten = 0;
 
-for (const locale of PLAYGROUND_LOCALES) {
-  await writeRoutePage({
-    locale,
-    path: `/${locale}`,
-    example: null,
-  });
-
-  for (const example of PLAYGROUND_EXAMPLES) {
-    await writeRoutePage({
-      locale,
-      path: `/${locale}/${example.id}`,
-      example,
-    });
-  }
+if (isExecutedDirectly()) {
+  await prerenderExamples();
 }
 
-console.log(`✅ SEO public routes prerendered (${pagesWritten} pages)`);
+export async function prerenderExamples() {
+  for (const locale of PLAYGROUND_LOCALES) {
+    await writeRoutePage({
+      locale,
+      path: `/${locale}`,
+      example: null,
+    });
+
+    for (const example of PLAYGROUND_EXAMPLES) {
+      await writeRoutePage({
+        locale,
+        path: `/${locale}/${example.id}`,
+        example,
+      });
+    }
+  }
+
+  console.log(`✅ SEO public routes prerendered (${pagesWritten} pages)`);
+}
+
+function isExecutedDirectly() {
+  return process.argv[1] === fileURLToPath(import.meta.url);
+}
 
 async function loadPlaygroundData() {
   const result = await esbuild.build({
@@ -132,7 +142,7 @@ async function writeRoutePage({ locale, path, example }) {
   pagesWritten++;
 }
 
-async function renderDocument({ locale, path, example }) {
+export async function renderDocument({ locale, path, example }) {
   const copy = COPY[locale];
   const title = example
     ? `${example.labels[locale]} - Pick Components`
@@ -148,7 +158,6 @@ async function renderDocument({ locale, path, example }) {
     : `/${alternateLocale}`;
   const publicAlternatePath = withPlaygroundBasePath(alternatePath);
   const state = buildSerializedState({ locale, path, example });
-
   return `<!doctype html>
 <html lang="${locale}">
   <head>
@@ -377,12 +386,34 @@ async function renderExampleMain(locale, example) {
 
 async function readExampleSource(example, locale) {
   const publicSrc = example.variantSrcs[locale][LIGHT_THEME];
-  const filePath = join(
+  const builtFilePath = join(
     examplesDir,
     stripPlaygroundBasePath(publicSrc).replace(/^\//u, ""),
   );
+  const sourceFileName = basename(publicSrc);
+  const variantSourceFilePath = join(
+    examplesDir,
+    "src",
+    "demos",
+    example.id,
+    "variants",
+    `${locale}-${LIGHT_THEME}`,
+    sourceFileName,
+  );
+  const rootSourceFilePath = join(
+    examplesDir,
+    "src",
+    "demos",
+    example.id,
+    sourceFileName,
+  );
+  const filePath = [
+    builtFilePath,
+    variantSourceFilePath,
+    rootSourceFilePath,
+  ].find((candidate) => existsSync(candidate));
 
-  if (!existsSync(filePath)) {
+  if (!filePath) {
     return "";
   }
 
@@ -453,10 +484,24 @@ function exampleSummary(locale, example) {
   return `This prerendered document exposes ${example.labels[locale]} as navigable HTML. The interactive playground experience is enhanced later by the client bundle.`;
 }
 
-function renderPublicStyles() {
+export function renderPublicStyles() {
   return `
     :root {
       color-scheme: light dark;
+      --pg-topbar-bg: #1e1e1e;
+      --pg-topbar-color: #e5e9f0;
+      --pg-topbar-border: #3c3c3c;
+      --pg-bar-bg: #1e1e1e;
+      --pg-editor-bg: #282c34;
+      --pg-border: #3c3c3c;
+      --pg-tab-color: #8a919a;
+      --pg-tab-hover: rgba(255, 255, 255, 0.05);
+      --pg-tab-active: #bcc4d0;
+      --pg-action-color: #9da5b4;
+      --pg-action-hover-bg: #333842;
+      --pg-action-hover-color: #e5e9f0;
+      --pg-result-bg: #1b2430;
+      --pg-result-lbl: #a1acbc;
       --pg-shell-topbar-bg: #151b23;
       --pg-shell-topbar-color: #eef2f7;
       --pg-shell-panel-bg: #111822;
@@ -468,6 +513,15 @@ function renderPublicStyles() {
       --pg-shell-sidebar-active-bg: rgba(97, 175, 239, 0.16);
       --pg-shell-sidebar-active-border: #61afef;
       --pg-shell-sidebar-active-color: #8ac6f5;
+      --pg-shell-control-bg: #111827;
+      --pg-shell-control-border: #2b3645;
+      --pg-shell-control-color: #d8e0eb;
+      --pg-shell-control-muted: #95a1b4;
+      --pg-shell-control-hover-bg: #182233;
+      --pg-shell-control-active-bg: rgba(97, 175, 239, 0.18);
+      --pg-shell-control-active-color: #8ac6f5;
+      --pg-shell-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      --pg-shell-control-focus: rgba(97, 175, 239, 0.28);
       --pg-page-bg: #0f1622;
       --pg-page-panel: #151e2c;
       --pg-page-text: #e9eef7;
@@ -475,18 +529,85 @@ function renderPublicStyles() {
       --pg-page-code: #0b111a;
     }
 
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --pg-topbar-bg: #f2f5f8;
+        --pg-topbar-color: #24292e;
+        --pg-topbar-border: #d7dee8;
+        --pg-bar-bg: #f3f6fa;
+        --pg-editor-bg: #f8fafc;
+        --pg-border: #d7dee8;
+        --pg-tab-color: #6a737d;
+        --pg-tab-hover: rgba(31, 41, 55, 0.05);
+        --pg-tab-active: #24292e;
+        --pg-action-color: #6a737d;
+        --pg-action-hover-bg: #e7edf4;
+        --pg-action-hover-color: #24292e;
+        --pg-result-bg: #f4f7fb;
+        --pg-result-lbl: #6a737d;
+        --pg-shell-topbar-bg: #f4f7fb;
+        --pg-shell-topbar-color: #1d2735;
+        --pg-shell-panel-bg: #f7f9fc;
+        --pg-shell-panel-border: #d7dee8;
+        --pg-shell-brand-accent: #94bf67;
+        --pg-shell-sidebar-heading: #6d7685;
+        --pg-shell-sidebar-link: #243040;
+        --pg-shell-sidebar-hover-bg: #edf3f8;
+        --pg-shell-sidebar-active-bg: rgba(16, 149, 193, 0.1);
+        --pg-shell-sidebar-active-border: #1095c1;
+        --pg-shell-sidebar-active-color: #0b76a6;
+        --pg-shell-control-bg: #f5f8fc;
+        --pg-shell-control-border: #d3dce8;
+        --pg-shell-control-color: #243040;
+        --pg-shell-control-muted: #667389;
+        --pg-shell-control-hover-bg: #ebf1f7;
+        --pg-shell-control-active-bg: rgba(16, 149, 193, 0.1);
+        --pg-shell-control-active-color: #0b76a6;
+        --pg-shell-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+        --pg-shell-control-focus: rgba(16, 149, 193, 0.24);
+        --pg-page-bg: #f7f9fc;
+        --pg-page-panel: #ffffff;
+        --pg-page-text: #243040;
+        --pg-page-muted: #657289;
+        --pg-page-code: #f2f5f9;
+      }
+    }
+
     :root[data-theme="light"] {
+      --pg-topbar-bg: #f2f5f8;
+      --pg-topbar-color: #24292e;
+      --pg-topbar-border: #d7dee8;
+      --pg-bar-bg: #f3f6fa;
+      --pg-editor-bg: #f8fafc;
+      --pg-border: #d7dee8;
+      --pg-tab-color: #6a737d;
+      --pg-tab-hover: rgba(31, 41, 55, 0.05);
+      --pg-tab-active: #24292e;
+      --pg-action-color: #6a737d;
+      --pg-action-hover-bg: #e7edf4;
+      --pg-action-hover-color: #24292e;
+      --pg-result-bg: #f4f7fb;
+      --pg-result-lbl: #6a737d;
       --pg-shell-topbar-bg: #f4f7fb;
       --pg-shell-topbar-color: #1d2735;
       --pg-shell-panel-bg: #f7f9fc;
       --pg-shell-panel-border: #d7dee8;
-      --pg-shell-brand-accent: #5c8f2d;
+      --pg-shell-brand-accent: #94bf67;
       --pg-shell-sidebar-heading: #6d7685;
       --pg-shell-sidebar-link: #243040;
       --pg-shell-sidebar-hover-bg: #edf3f8;
       --pg-shell-sidebar-active-bg: rgba(16, 149, 193, 0.1);
       --pg-shell-sidebar-active-border: #1095c1;
       --pg-shell-sidebar-active-color: #0b76a6;
+      --pg-shell-control-bg: #f5f8fc;
+      --pg-shell-control-border: #d3dce8;
+      --pg-shell-control-color: #243040;
+      --pg-shell-control-muted: #667389;
+      --pg-shell-control-hover-bg: #ebf1f7;
+      --pg-shell-control-active-bg: rgba(16, 149, 193, 0.1);
+      --pg-shell-control-active-color: #0b76a6;
+      --pg-shell-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      --pg-shell-control-focus: rgba(16, 149, 193, 0.24);
       --pg-page-bg: #f7f9fc;
       --pg-page-panel: #ffffff;
       --pg-page-text: #243040;

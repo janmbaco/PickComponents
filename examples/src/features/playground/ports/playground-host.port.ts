@@ -16,9 +16,18 @@ export class BrowserPlaygroundHostPort implements IPlaygroundHostPort {
       return "dark";
     }
 
-    return document.documentElement.getAttribute("data-theme") === "light"
-      ? "light"
-      : "dark";
+    const explicitTheme = document.documentElement.getAttribute("data-theme");
+    if (explicitTheme === "light" || explicitTheme === "dark") {
+      return explicitTheme;
+    }
+
+    if (typeof window.matchMedia === "function") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+
+    return "dark";
   }
 
   observeThemeChanges(listener: () => void): () => void {
@@ -32,6 +41,20 @@ export class BrowserPlaygroundHostPort implements IPlaygroundHostPort {
       attributeFilter: ["data-theme"],
     });
 
-    return () => observer.disconnect();
+    const mediaQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-color-scheme: dark)")
+        : null;
+    const handleSystemThemeChange = (): void => {
+      if (!document.documentElement.hasAttribute("data-theme")) {
+        listener();
+      }
+    };
+    mediaQuery?.addEventListener("change", handleSystemThemeChange);
+
+    return () => {
+      observer.disconnect();
+      mediaQuery?.removeEventListener("change", handleSystemThemeChange);
+    };
   }
 }

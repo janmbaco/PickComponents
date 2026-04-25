@@ -55,4 +55,5 @@ try {
   console.warn("⚠️  Pico CSS not found — run npm install");
 }
 
-await import("./prerender-examples.mjs");
+const { prerenderExamples } = await import("./prerender-examples.mjs");
+await prerenderExamples();
