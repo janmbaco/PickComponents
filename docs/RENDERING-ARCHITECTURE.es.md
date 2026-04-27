@@ -115,7 +115,7 @@ Cuando un componente renderiza dentro de un ShadowRoot, la proyección de conten
 
 ### Paso 7 — Ejecución del pipeline (`RenderPipeline`)
 
-1. **TemplateCompiler** — Parsea HTML a un elemento DOM real, o reactiva una raíz prerenderizada adoptada, registra Pick Components anidados en `ManagedElementRegistry` y llama `BindingResolver.bindElement()` para conectar suscripciones reactivas.
+1. **TemplateCompiler** — Parsea HTML a un elemento DOM real. Antes de construir el árbol reactivo, `TemplateStaticValidator` recorre el fragmento DOM y lanza un error si encuentra elementos peligrosos (`<script>`, `<iframe>`, `<object>`, `<embed>`, etc.), atributos de manejadores de eventos inline (`on*`), atributos bloqueados (`style`, `srcdoc`, `srcset`) o protocolos URL inseguros (`javascript:`, `vbscript:`, `data:`) en atributos URL estáticos. Si la validación pasa, el compilador registra Pick Components anidados en `ManagedElementRegistry` y llama `BindingResolver.bindElement()` para conectar suscripciones reactivas. Los valores de atributos dinámicos resueltos en runtime pasan por `AttributeBindingPolicy.sanitizeResolvedValue()`, que elimina el atributo del DOM si el valor resuelto es inseguro (por ejemplo, una URL `javascript:` producida por un binding).
 2. **Procesamiento del host administrado** — Encuentra el outlet con `OutletResolver` y migra `class`/`id` del host al outlet con `HostStyleMigrator`.
 3. **Reemplazo / adopción en DOM** — `DomContext.setElement()` reemplaza el skeleton por el elemento compilado, o `DomContext.adoptElement()` mantiene en su sitio el DOM prerenderizado compatible.
 4. **Estilos** — Las hojas de estilo compartidas se aplican por `adoptedStyleSheets` cuando el target root es un ShadowRoot. `metadata.styles` se antepone al target root activo en ambos modos, pero solo un ShadowRoot ofrece encapsulación real.
@@ -342,21 +342,19 @@ Interfaz de método único: `isManagedElement(element): boolean`. Delega en `Man
 
 ### Política de bindings de atributos
 
-Los bindings dinámicos de atributos siguen una política compartida, `defaultAttributeBindingPolicy`, usada tanto por `BindingResolver` como por el selector de contenido seguro del analizador de templates. La reflexión de atributos del host se sigue resolviendo aparte en `PickElementFactory`.
+`defaultAttributeBindingPolicy` es compartida por `BindingResolver` y `TemplateCompiler`. La reflexión de atributos del host ocurre aparte en `PickElementFactory`.
 
-Reglas:
+| Regla | Ejemplos | Resultado |
+| ----- | -------- | --------- |
+| Atributo de host | `<user-card user-id="42">` | Se refleja en la propiedad del componente |
+| Binding reactivo | `title="{{msg}}"`, `items="{{entries}}"` | Gestionado por `BindingResolver` |
+| Binding objeto/array | `items="{{entries}}"` | `ObjectRegistry`; el DOM recibe un id |
+| Booleanos | `disabled="{{loading}}"` | Sincroniza presencia de atributo y propiedad DOM |
+| Peligrosos (`on*`, `style`, `srcdoc`, `srcset`) | `onclick="x"`, `onclick="{{x}}"` | `TemplateStaticValidator` lanza en compilación; bloqueado siempre |
+| URL (`href`, `src`, …) | `href="javascript:x"`, `href="{{url}}"` | Valor estático peligroso → throw; binding dinámico peligroso → atributo eliminado en runtime |
+| Estructural `pick-action` | `action`, `event`, `bubble` | No son inputs del componente |
 
-| Regla                         | Ejemplos                                              | Resultado |
-| ----------------------------- | ----------------------------------------------------- | --------- |
-| Atributo en host componente   | `<user-card user-id="42">`                            | Se copia a la propiedad del componente cuando existe |
-| Binding reactivo              | `title="{{msg}}"`, `items="{{entries}}"`              | Lo gestiona `BindingResolver` |
-| Binding de objeto/array       | `items="{{entries}}"`                                 | Se guarda en `ObjectRegistry`; el DOM recibe un id |
-| Atributos booleanos           | `disabled="{{loading}}"`, `required="{{isRequired}}"` | Sincroniza presencia de atributo y propiedad DOM |
-| Atributos peligrosos          | `onclick="{{x}}"`, `style="{{css}}"`, `srcdoc="{{x}}"`| La política de atributos los rechaza |
-| Atributos URL                 | `href="{{url}}"`, `src="{{imageUrl}}"`                | Se sanitizan; protocolos inseguros como `javascript:` se rechazan |
-| Estructural pick-action       | `action`, `event`, `value`, `bubble`                  | Lo usa `<pick-action>`, no son inputs del componente |
-
-`event` también funciona como alias de `<pick-action action="...">`. Los ejemplos nuevos deben usar `action`. Una acción manejada se detiene en el PickComponent más cercano salvo que el elemento tenga el atributo `bubble`.
+`event` es alias de `action` en `<pick-action>`; los ejemplos nuevos deben usar `action`. Una acción se detiene en el PickComponent más cercano salvo que el elemento tenga `bubble`.
 
 ### OutletResolver
 

@@ -24,11 +24,11 @@ test.describe("HtmlAwareTokenExtractor (contract)", () => {
     );
 
     const template = `
-      <div class="{{className}}" onclick="{{no1}}" style="color: {{no2}}">
+      <div class="{{className}}" onclick="{{onAttr}}" style="color: {{styleAttr}}">
         {{title}}
-        <!-- {{no3}} -->
-        <script>{{no4}}</script>
-        <style>{{no5}}</style>
+        <!-- {{noComment}} -->
+        <script>{{noScript}}</script>
+        <style>{{noStyleEl}}</style>
         <span data-value="{{dataValue}}">{{message}}</span>
       </div>
     `;
@@ -39,9 +39,11 @@ test.describe("HtmlAwareTokenExtractor (contract)", () => {
       tokens.filter((t) => t.kind === "binding").map((t) => t.value),
     );
 
-    // Assert
+    // Assert — on* and style attributes are extracted here; they are blocked
+    // by TemplateStaticValidator at compile time, not at the extraction stage.
+    // Comments, <script> content, and <style> element content are still excluded.
     expect(bindings).toEqual(
-      new Set(["className", "title", "dataValue", "message"]),
+      new Set(["className", "onAttr", "styleAttr", "title", "dataValue", "message"]),
     );
   });
 

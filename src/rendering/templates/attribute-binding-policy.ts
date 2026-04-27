@@ -20,8 +20,6 @@ export interface IAttributeBindingPolicy {
   ): string | null;
 }
 
-const BLOCKED_DYNAMIC_ATTRIBUTES = new Set(["style", "srcdoc", "srcset"]);
-
 const URL_DYNAMIC_ATTRIBUTES = new Set([
   "action",
   "background",
@@ -49,11 +47,7 @@ export class AttributeBindingPolicy implements IAttributeBindingPolicy {
   }
 
   canBindAttribute(attributeName: string): boolean {
-    const normalized = this.normalize(attributeName);
-    if (!normalized) return false;
-    if (this.isEventHandlerAttribute(normalized)) return false;
-    if (BLOCKED_DYNAMIC_ATTRIBUTES.has(normalized)) return false;
-    return true;
+    return !!this.normalize(attributeName);
   }
 
   allowsObjectBinding(attributeName: string): boolean {
@@ -69,8 +63,7 @@ export class AttributeBindingPolicy implements IAttributeBindingPolicy {
     ownerElement?: Element | null,
   ): string | null {
     const normalized = this.normalize(attributeName);
-    if (!this.canBindAttribute(normalized)) return null;
-    if (value.includes("{{")) return value;
+
     if (!this.isUrlAttribute(normalized)) return value;
     return this.isSafeUrl(value, ownerElement) ? value : null;
   }
@@ -81,17 +74,13 @@ export class AttributeBindingPolicy implements IAttributeBindingPolicy {
     ownerElement?: Element | null,
   ): string | null {
     const normalized = this.normalize(attributeName);
-    if (!this.canBindAttribute(normalized)) return null;
+    if (!normalized) return null;
     if (!this.isUrlAttribute(normalized)) return value;
     return this.isSafeUrl(value, ownerElement) ? value : null;
   }
 
   private normalize(attributeName: string): string {
     return (attributeName || "").trim().toLowerCase();
-  }
-
-  private isEventHandlerAttribute(attributeName: string): boolean {
-    return attributeName.startsWith("on");
   }
 
   private isUrlAttribute(attributeName: string): boolean {

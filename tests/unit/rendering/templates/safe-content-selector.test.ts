@@ -52,27 +52,29 @@ test.describe("SafeContentSelector", () => {
     expect(fragments[0].content).toContain("{{ok}}");
   });
 
-  test("should exclude event handler and style attributes", () => {
+  test("event handler and style attributes are extracted (blocked at compile time by TemplateStaticValidator)", () => {
     // Arrange
     const html =
-      '<button onclick="{{no}}" style="color: {{no2}}" data-val="{{yes}}">{{text}}</button>';
+      '<button onclick="{{onAttr}}" style="color: {{styleAttr}}" data-val="{{yes}}">{{text}}</button>';
 
     // Act
     const fragments = select(html);
 
-    // Assert
-    expect(fragments.map((f) => f.content)).toEqual(["{{yes}}", "{{text}}"]);
+    // Assert — on* and style tokens are now extracted; TemplateStaticValidator
+    // throws before this selector is reached in a real render.
+    expect(fragments.map((f) => f.content)).toEqual(["{{onAttr}}", "color: {{styleAttr}}", "{{yes}}", "{{text}}"]);
   });
 
-  test("should exclude srcdoc attributes", () => {
+  test("srcdoc attributes are extracted (blocked at compile time by TemplateStaticValidator)", () => {
     // Arrange
-    const html = '<iframe srcdoc="{{no}}" data-val="{{yes}}"></iframe>';
+    const html = '<iframe srcdoc="{{srcdocAttr}}" data-val="{{yes}}"></iframe>';
 
     // Act
     const fragments = select(html);
 
-    // Assert
-    expect(fragments.map((f) => f.content)).toEqual(["{{yes}}"]);
+    // Assert — srcdoc token is now extracted; TemplateStaticValidator throws
+    // before this selector is reached in a real render.
+    expect(fragments.map((f) => f.content)).toEqual(["{{srcdocAttr}}", "{{yes}}"]);
   });
 
   test("should exclude artifacts from invalid tag names", () => {

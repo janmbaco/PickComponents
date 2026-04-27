@@ -8,9 +8,9 @@ import { ComponentMetadata } from "../../core/component-metadata.js";
 import { IBindingResolver } from "../bindings/binding-resolver.js";
 import { NodeType } from "../dom/node-types.js";
 import {
-  TemplateStaticSanitizer,
-  type ITemplateStaticSanitizer,
-} from "./template-static-sanitizer.js";
+  TemplateStaticValidator,
+  type ITemplateStaticValidator,
+} from "./template-static-validator.js";
 
 /**
  * Implements the responsibility of compiling template HTML with reactive bindings.
@@ -47,6 +47,7 @@ export class TemplateCompiler implements ITemplateCompiler {
    * @param bindingResolver - Resolver for attribute/text bindings with input cleanup
    * @param metadataSource - Read-only source for component metadata lookup
    * @param managedRegistry - Registry for managed element tracking
+   * @param templateStaticValidator - Validator for static template safety checks
    * @throws Error if domAdapter or bindingResolver is null or undefined
    */
   constructor(
@@ -54,7 +55,7 @@ export class TemplateCompiler implements ITemplateCompiler {
     private readonly bindingResolver: IBindingResolver,
     private readonly metadataSource: IComponentMetadataRegistry,
     private readonly managedRegistry?: IManagedElementRegistry,
-    private readonly templateStaticSanitizer: ITemplateStaticSanitizer = new TemplateStaticSanitizer(),
+    private readonly templateStaticValidator: ITemplateStaticValidator = new TemplateStaticValidator(),
   ) {
     if (!domAdapter) {
       throw new Error("Dom adapter is required");
@@ -174,7 +175,7 @@ export class TemplateCompiler implements ITemplateCompiler {
       templateSource.trim(),
     );
     template.innerHTML = prepared;
-    this.templateStaticSanitizer.sanitize(template.content);
+    this.templateStaticValidator.validate(template.content);
 
     let rootElement: HTMLElement;
     if (template.content.children.length === 1) {

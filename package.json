@@ -1,6 +1,6 @@
 {
   "name": "pick-components",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A tiny lifecycle-focused framework for building reactive web components",
   "main": "dist/index.js",
   "module": "dist/index.js",

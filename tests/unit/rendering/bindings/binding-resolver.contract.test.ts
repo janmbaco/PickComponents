@@ -347,50 +347,6 @@ test.describe("BindingResolver Contract", () => {
   });
 
   test.describe("attribute binding safety", () => {
-    test("should remove dynamic event handler attributes instead of resolving them", () => {
-      // Arrange
-      const mockResolver: IManagedElementResolver = {
-        isManagedElement: () => false,
-      };
-      const { bindingResolver } = createResolver(mockResolver);
-      const button = document.createElement("button");
-      button.setAttribute("onclick", "{{payload}}");
-      const component = createMockComponent({ payload: "alert(1)" });
-
-      // Act
-      bindingResolver.bindElement(
-        button,
-        component as any,
-        createMockBindingTarget(),
-      );
-
-      // Assert
-      expect(button.hasAttribute("onclick")).toBe(false);
-    });
-
-    test("should remove dynamic style attributes instead of resolving them", () => {
-      // Arrange
-      const mockResolver: IManagedElementResolver = {
-        isManagedElement: () => false,
-      };
-      const { bindingResolver } = createResolver(mockResolver);
-      const card = document.createElement("div");
-      card.setAttribute("style", "{{cssText}}");
-      const component = createMockComponent({
-        cssText: "background: url(javascript:alert(1))",
-      });
-
-      // Act
-      bindingResolver.bindElement(
-        card,
-        component as any,
-        createMockBindingTarget(),
-      );
-
-      // Assert
-      expect(card.hasAttribute("style")).toBe(false);
-    });
-
     test("should remove unsafe dynamic URL attribute values", () => {
       // Arrange
       const mockResolver: IManagedElementResolver = {

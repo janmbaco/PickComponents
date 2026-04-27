@@ -295,7 +295,7 @@ test.describe("TemplateCompiler", () => {
       expect(result.getAttribute("title")).toBe("Click me");
     });
 
-    test("should remove static event handler attributes", async ({
+    test("should throw on static event handler attributes", async ({
       compiler,
       component,
       domContext,
@@ -303,15 +303,13 @@ test.describe("TemplateCompiler", () => {
       // Arrange
       const template = '<div><img src="x" onerror="alert(1)"></div>';
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      const img = result.querySelector("img");
-      expect(img?.hasAttribute("onerror")).toBe(false);
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow('Unsafe static template attribute "onerror"');
     });
 
-    test("should remove static event handler attributes case-insensitively", async ({
+    test("should throw on static event handler attributes case-insensitively", async ({
       compiler,
       component,
       domContext,
@@ -319,14 +317,13 @@ test.describe("TemplateCompiler", () => {
       // Arrange
       const template = '<div onClick="alert(1)">x</div>';
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.hasAttribute("onclick")).toBe(false);
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow(/onClick|onclick/);
     });
 
-    test("should remove static javascript URL attributes", async ({
+    test("should throw on static javascript URL attributes", async ({
       compiler,
       component,
       domContext,
@@ -334,49 +331,24 @@ test.describe("TemplateCompiler", () => {
       // Arrange
       const template = '<a href="javascript:alert(1)">x</a>';
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.hasAttribute("href")).toBe(false);
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow("Unsafe static URL");
     });
 
-    test("should remove static data and vbscript URL attributes", async ({
+    test("should throw on static data URL attributes", async ({
       compiler,
       component,
       domContext,
     }) => {
       // Arrange
-      const template = `
-        <div>
-          <img src="data:text/html,<script>alert(1)</script>">
-          <form action="vbscript:msgbox(1)"></form>
-        </div>
-      `;
+      const template = '<a href="data:text/html,<script>alert(1)</script>">x</a>';
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.querySelector("img")?.hasAttribute("src")).toBe(false);
-      expect(result.querySelector("form")?.hasAttribute("action")).toBe(false);
-    });
-
-    test("should remove static style and srcset attributes", async ({
-      compiler,
-      component,
-      domContext,
-    }) => {
-      // Arrange
-      const template =
-        '<img style="background: red" srcset="javascript:alert(1) 1x">';
-
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.hasAttribute("style")).toBe(false);
-      expect(result.hasAttribute("srcset")).toBe(false);
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow("Unsafe static URL");
     });
 
     test("should preserve safe static URLs", async ({
@@ -429,7 +401,7 @@ test.describe("TemplateCompiler", () => {
       expect(result.getAttribute("href")).toBe("/docs/updated");
     });
 
-    test("should remove static srcdoc by removing iframe elements", async ({
+    test("should throw on static srcdoc", async ({
       compiler,
       component,
       domContext,
@@ -437,14 +409,13 @@ test.describe("TemplateCompiler", () => {
       // Arrange
       const template = '<iframe srcdoc="<script>alert(1)</script>"></iframe>';
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.querySelector("iframe")).toBeNull();
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow(/Unsafe static template element|Unsafe static template attribute "srcdoc"/);
     });
 
-    test("should remove static script elements while preserving safe siblings", async ({
+    test("should throw on static script elements", async ({
       compiler,
       component,
       domContext,
@@ -452,15 +423,13 @@ test.describe("TemplateCompiler", () => {
       // Arrange
       const template = "<div><script>alert(1)</script><p>safe</p></div>";
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.querySelector("script")).toBeNull();
-      expect(result.querySelector("p")?.textContent).toBe("safe");
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow("Unsafe static template element <script>");
     });
 
-    test("should sanitize inside native template content", async ({
+    test("should throw inside native template content", async ({
       compiler,
       component,
       domContext,
@@ -468,19 +437,13 @@ test.describe("TemplateCompiler", () => {
       // Arrange
       const template = '<template><img src="x" onerror="alert(1)"></template>';
 
-      // Act
-      const result = (await compiler.compile(
-        template,
-        component,
-        domContext,
-      )) as HTMLTemplateElement;
-
-      // Assert
-      const img = result.content.querySelector("img");
-      expect(img?.hasAttribute("onerror")).toBe(false);
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow('Unsafe static template attribute "onerror"');
     });
 
-    test("should sanitize pick-for preset templates", async ({
+    test("should throw inside pick-for preset templates", async ({
       compiler,
       component,
       domContext,
@@ -493,16 +456,13 @@ test.describe("TemplateCompiler", () => {
         </pick-for>
       `;
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.getAttribute("data-preset-template")).not.toContain(
-        "onerror",
-      );
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow('Unsafe static template attribute "onerror"');
     });
 
-    test("should sanitize existing data-preset-template attributes", async ({
+    test("should throw when data-preset-template contains unsafe static HTML", async ({
       compiler,
       component,
       domContext,
@@ -511,13 +471,10 @@ test.describe("TemplateCompiler", () => {
       const template =
         '<div data-preset-template=\'<img src="x" onerror="alert(1)">\'></div>';
 
-      // Act
-      const result = await compiler.compile(template, component, domContext);
-
-      // Assert
-      expect(result.getAttribute("data-preset-template")).not.toContain(
-        "onerror",
-      );
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow('Unsafe static template attribute "onerror"');
     });
 
     test("should keep dynamic text bindings as text content", async ({
@@ -599,6 +556,50 @@ test.describe("TemplateCompiler", () => {
         : result.querySelector("pick-action");
       expect(pickAction).not.toBeNull();
       expect(pickAction?.getAttribute("event")).toBe("run");
+    });
+
+    test("should throw on static style attributes", async ({
+      compiler,
+      component,
+      domContext,
+    }) => {
+      // Arrange
+      const template = '<div style="color:red">x</div>';
+
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow('Unsafe static template attribute "style"');
+    });
+
+    test("should throw on static srcset attributes", async ({
+      compiler,
+      component,
+      domContext,
+    }) => {
+      // Arrange
+      const template = '<img srcset="a.png 1x, b.png 2x">';
+
+      // Act & Assert
+      await expect(
+        compiler.compile(template, component, domContext),
+      ).rejects.toThrow('Unsafe static template attribute "srcset"');
+    });
+
+    test("should allow aria and data attributes", async ({
+      compiler,
+      component,
+      domContext,
+    }) => {
+      // Arrange
+      const template = '<div aria-label="Hello" data-id="123">x</div>';
+
+      // Act
+      const result = await compiler.compile(template, component, domContext);
+
+      // Assert
+      expect(result.getAttribute("aria-label")).toBe("Hello");
+      expect(result.getAttribute("data-id")).toBe("123");
     });
 
     test("should compile template with nested property binding", async ({
