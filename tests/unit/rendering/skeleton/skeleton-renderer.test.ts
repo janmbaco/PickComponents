@@ -284,6 +284,32 @@ test.describe("SkeletonRenderer", () => {
       expect(html).toContain("pick-default-skeleton");
       expect(html).toContain("<style>");
     });
+
+    test("should remove unsafe skeleton URL attributes through the shared policy", async ({
+      renderer,
+      domContext,
+    }) => {
+      // Arrange
+      const component = new TestComponent();
+      const metadata = createMetadata(
+        [
+          '<a href="java script:alert(1)">bad link</a>',
+          '<img src="data:text/html,<script>alert(1)</script>">',
+          '<form action="VBScript:msgbox(1)"></form>',
+        ].join(""),
+      );
+
+      // Act
+      await renderer.render(component, metadata, domContext);
+
+      // Assert
+      const wrapper = domContext.getElement();
+      expect(wrapper?.querySelector("a")?.hasAttribute("href")).toBe(false);
+      expect(wrapper?.querySelector("img")?.hasAttribute("src")).toBe(false);
+      expect(wrapper?.querySelector("form")?.hasAttribute("action")).toBe(
+        false,
+      );
+    });
   });
 
   test.describe("performance & caching", () => {

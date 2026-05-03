@@ -1,4 +1,9 @@
 import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
+import { escapeRegExp } from "../security/escape-reg-exp.js";
+import {
+  previewHeadContentPolicy,
+  sanitizeHeadContent,
+} from "../security/head-content-sanitizer.js";
 
 export const PLAYGROUND_PREVIEW_PORT_TOKEN = "PlaygroundPreviewPort";
 
@@ -28,7 +33,10 @@ async function loadVendorDataUrls(): Promise<Record<string, string>> {
   const entries = await Promise.all(
     Object.entries(VENDOR_PATHS).map(async ([name, path]) => {
       const text = await fetch(path).then((r) => r.text());
-      return [name, `data:text/javascript;charset=utf-8,${encodeURIComponent(text)}`] as const;
+      return [
+        name,
+        `data:text/javascript;charset=utf-8,${encodeURIComponent(text)}`,
+      ] as const;
     }),
   );
   return Object.fromEntries(entries);
@@ -129,10 +137,11 @@ function buildSrcdocMulti(
 
   function rewriteLocalImports(code: string): string {
     for (const localFile of localFiles) {
-      const escaped = localFile.replace(/\./g, "\\.");
+      const escaped = escapeRegExp(localFile);
       code = code.replace(
         new RegExp(`(['"])\\.\\/` + escaped + `(['"])`, "g"),
-        `$1__pg__/${localFile}$2`,
+        (_match, openingQuote: string, closingQuote: string) =>
+          `${openingQuote}__pg__/${localFile}${closingQuote}`,
       );
     }
     return code;
@@ -257,9 +266,5 @@ ${scriptBody}
 }
 
 function sanitizePreviewHeadContent(headContent: string): string {
-  return headContent
-    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
-    .replace(/<script\b[^>]*\/>/gi, "")
-    .replace(/<meta\s+charset=(?:"[^"]*"|'[^']*'|[^\s/>]+)\s*\/?>/gi, "")
-    .trim();
+  return sanitizeHeadContent(headContent, previewHeadContentPolicy);
 }

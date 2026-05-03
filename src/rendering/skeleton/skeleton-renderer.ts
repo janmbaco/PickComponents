@@ -6,6 +6,11 @@ import {
   DomContentType,
 } from "../dom-context/dom-context.interface.js";
 import { IDomAdapter } from "../dom/dom-adapter.interface.js";
+import {
+  defaultSafeUrlPolicy,
+  isUrlAttributeName,
+  type ISafeUrlPolicy,
+} from "../security/safe-url-policy.js";
 import type { ISkeletonValidator } from "./skeleton-validator.js";
 
 /**
@@ -61,10 +66,12 @@ export class SkeletonRenderer implements ISkeletonRenderer {
     private readonly domAdapter: IDomAdapter,
     validator: ISkeletonValidator,
     private readonly expressionResolver: IExpressionResolver,
+    private readonly safeUrlPolicy: ISafeUrlPolicy = defaultSafeUrlPolicy,
   ) {
     if (!domAdapter) throw new Error("Dom adapter is required");
     if (!validator) throw new Error("Skeleton validator is required");
     if (!expressionResolver) throw new Error("Expression resolver is required");
+    if (!safeUrlPolicy) throw new Error("Safe URL policy is required");
     this.validator = validator;
   }
   /**
@@ -231,7 +238,7 @@ export class SkeletonRenderer implements ISkeletonRenderer {
    *
    * @description
    * Removes <script> tags and inline event handler attributes (on*). Also strips
-   * javascript: URLs from href/src attributes. Intended as a defensive measure;
+   * unsafe URL values from URL-bearing attributes. Intended as a defensive measure;
    * skeleton templates are developer-provided, but this ensures SSR/browser safety.
    *
    * @param html - Raw HTML string to sanitize
@@ -250,15 +257,13 @@ export class SkeletonRenderer implements ISkeletonRenderer {
       // Remove inline event handlers (on*)
       Array.from(el.attributes).forEach((attr) => {
         const name = attr.name.toLowerCase();
-        const value = attr.value?.toLowerCase() || "";
         if (name.startsWith("on")) {
           el.removeAttribute(attr.name);
           return;
         }
-        // Strip javascript: urls in href/src
         if (
-          (name === "href" || name === "src") &&
-          value.trim().startsWith("javascript:")
+          isUrlAttributeName(name) &&
+          !this.safeUrlPolicy.isSafeUrl(attr.value, el)
         ) {
           el.removeAttribute(attr.name);
         }

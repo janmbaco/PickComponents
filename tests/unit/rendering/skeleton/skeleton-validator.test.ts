@@ -250,7 +250,7 @@ test.describe("SkeletonValidator", () => {
 
       // Act & Assert
       expect(() => validator.validate(html)).toThrow(
-        /JavaScript URLs are not allowed/,
+        /Unsafe URL "javascript:alert\('xss'\)" is not allowed in href attributes/,
       );
     });
 
@@ -261,8 +261,21 @@ test.describe("SkeletonValidator", () => {
 
       // Act & Assert
       expect(() => validator.validate(html)).toThrow(
-        /JavaScript URLs are not allowed/,
+        /Unsafe URL "javascript:alert\('xss'\)" is not allowed in src attributes/,
       );
+    });
+
+    test("should reject data, vbscript and obfuscated executable URLs", () => {
+      const validator = new SkeletonValidator();
+      const unsafeSkeletons = [
+        '<a href="data:image/svg+xml;base64,PHN2Zy8+">Click</a>',
+        '<a href="VBScript:msgbox(1)">Click</a>',
+        '<a href="java script:alert(1)">Click</a>',
+      ];
+
+      for (const html of unsafeSkeletons) {
+        expect(() => validator.validate(html)).toThrow(/Unsafe URL/);
+      }
     });
 
     test("should reject unknown attributes", () => {

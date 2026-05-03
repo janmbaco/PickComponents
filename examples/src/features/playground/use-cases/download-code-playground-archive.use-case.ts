@@ -9,6 +9,11 @@ import type {
   PlaygroundArchiveEntry,
 } from "../ports/playground-download.port.js";
 import { withPlaygroundBasePath } from "../../routing/models/playground-public-path.js";
+import { escapeRegExp } from "../security/escape-reg-exp.js";
+import {
+  downloadHeadContentPolicy,
+  sanitizeHeadContent,
+} from "../security/head-content-sanitizer.js";
 
 export async function downloadCodePlaygroundArchive(
   session: CodePlaygroundSessionState,
@@ -332,6 +337,20 @@ function buildDownloadBuildScript({
   stylesheetFiles: string[];
   htmlTemplateFiles: string[];
 }): string {
+  const escapedStylesheetFiles = stylesheetFiles.map((file) => ({
+    file,
+    escaped: escapeRegExp(file),
+  }));
+  const escapedHtmlTemplateFiles = htmlTemplateFiles.map((file) => ({
+    file,
+    escaped: escapeRegExp(file),
+  }));
+  const escapedLocalTypeScriptFiles = localTypeScriptFiles.map((file) => ({
+    file,
+    escaped: escapeRegExp(file),
+    jsFile: file.replace(/\.ts$/, ".js"),
+  }));
+
   return `import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -341,6 +360,9 @@ const rootDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const localTypeScriptFiles = ${JSON.stringify(localTypeScriptFiles, null, 2)};
 const stylesheetFiles = ${JSON.stringify(stylesheetFiles, null, 2)};
 const htmlTemplateFiles = ${JSON.stringify(htmlTemplateFiles, null, 2)};
+const escapedStylesheetFiles = ${JSON.stringify(escapedStylesheetFiles, null, 2)};
+const escapedHtmlTemplateFiles = ${JSON.stringify(escapedHtmlTemplateFiles, null, 2)};
+const escapedLocalTypeScriptFiles = ${JSON.stringify(escapedLocalTypeScriptFiles, null, 2)};
 
 const ts = await loadTypeScriptCompiler();
 
@@ -422,28 +444,27 @@ async function writeGeneratedFile(file, content) {
 function rewriteLocalImports(code) {
   let rewritten = code;
 
-  for (const file of stylesheetFiles) {
-    const escaped = escapeRegExp(file);
+  for (const { file, escaped } of escapedStylesheetFiles) {
     rewritten = rewritten.replace(
       new RegExp(\`(['"])\\\\./\${escaped}(['"])\`, "g"),
-      \`$1./\${file}.js$2\`,
+      (_match, openingQuote, closingQuote) =>
+        \`\${openingQuote}./\${file}.js\${closingQuote}\`,
     );
   }
 
-  for (const file of htmlTemplateFiles) {
-    const escaped = escapeRegExp(file);
+  for (const { file, escaped } of escapedHtmlTemplateFiles) {
     rewritten = rewritten.replace(
       new RegExp(\`(['"])\\\\./\${escaped}(['"])\`, "g"),
-      \`$1./\${file}.js$2\`,
+      (_match, openingQuote, closingQuote) =>
+        \`\${openingQuote}./\${file}.js\${closingQuote}\`,
     );
   }
 
-  for (const file of localTypeScriptFiles) {
-    const escaped = escapeRegExp(file);
-    const jsFile = file.replace(/\\.ts$/, ".js");
+  for (const { escaped, jsFile } of escapedLocalTypeScriptFiles) {
     rewritten = rewritten.replace(
       new RegExp(\`(['"])\\\\./\${escaped}(['"])\`, "g"),
-      \`$1./\${jsFile}$2\`,
+      (_match, openingQuote, closingQuote) =>
+        \`\${openingQuote}./\${jsFile}\${closingQuote}\`,
     );
   }
 
@@ -458,20 +479,11 @@ function ensureSourceMapReference(code, sourceMapFile) {
 
   return \`\${code.trimEnd()}\\n\${sourceMapComment}\\n\`;
 }
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${"$"}{}()|[\\]\\\\]/g, "\\\\$&");
-}
 `;
 }
 
 function sanitizeDownloadHeadContent(headContent: string): string {
-  return headContent
-    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
-    .replace(/<script\b[^>]*\/>/gi, "")
-    .replace(/<meta\s+charset=(?:"[^"]*"|'[^']*'|[^\s/>]+)\s*\/?>/gi, "")
-    .replace(/<meta\s+name=(?:"viewport"|'viewport'|viewport)[^>]*>/gi, "")
-    .trim();
+  return sanitizeHeadContent(headContent, downloadHeadContentPolicy);
 }
 
 function indentHtmlFragment(fragment: string, indentation: string): string {

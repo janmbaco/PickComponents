@@ -1,0 +1,29 @@
+name: repo-code-only-js-ts
+paths:
+  - src
+  - examples/src/features
+  - examples/playground-examples
+  - tests
+  - scripts
+  - deploy/cloudflare/public-route-worker.mjs
+  - playwright.config.ts
+paths-ignore:
+  - node_modules
+  - "**/node_modules/**"
+  - "**/*.json"
+  - "**/*.yml"
+  - "**/*.yaml"
+  - dist
+  - "**/dist/**"
+  - examples/vendor
+  - scripts/vendor
+  - vendor
+  - examples/bundle.js
+  - examples/src/demos
+  - playwright-report
+  - test-results
+  - backup
+  - .codeql-db
+  - .codeql-db-repo-only
+  - .codeql-db-repo-strict
+  - .codeql-db-repo-code-only

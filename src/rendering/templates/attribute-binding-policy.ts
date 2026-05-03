@@ -1,3 +1,9 @@
+import {
+  defaultSafeUrlPolicy,
+  isUrlAttributeName,
+  type ISafeUrlPolicy,
+} from "../security/safe-url-policy.js";
+
 /**
  * Defines the safety policy for dynamic template attribute bindings.
  *
@@ -20,25 +26,14 @@ export interface IAttributeBindingPolicy {
   ): string | null;
 }
 
-const URL_DYNAMIC_ATTRIBUTES = new Set([
-  "action",
-  "background",
-  "cite",
-  "formaction",
-  "href",
-  "lowsrc",
-  "ping",
-  "poster",
-  "src",
-  "xlink:href",
-]);
-
-const SAFE_URL_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
-
 /**
  * Keeps dynamic attribute bindings away from browser-executed contexts.
  */
 export class AttributeBindingPolicy implements IAttributeBindingPolicy {
+  constructor(
+    private readonly safeUrlPolicy: ISafeUrlPolicy = defaultSafeUrlPolicy,
+  ) {}
+
   canExtractFromAttribute(attributeName: string): boolean {
     const normalized = this.normalize(attributeName);
     if (!normalized) return false;
@@ -84,7 +79,7 @@ export class AttributeBindingPolicy implements IAttributeBindingPolicy {
   }
 
   private isUrlAttribute(attributeName: string): boolean {
-    return URL_DYNAMIC_ATTRIBUTES.has(attributeName);
+    return isUrlAttributeName(attributeName);
   }
 
   private looksLikeInterpolation(attributeName: string): boolean {
@@ -98,52 +93,7 @@ export class AttributeBindingPolicy implements IAttributeBindingPolicy {
   }
 
   private isSafeUrl(value: string, ownerElement?: Element | null): boolean {
-    const trimmed = value.trim();
-    if (!trimmed) return true;
-    if (this.hasControlCharacter(trimmed)) return false;
-
-    const compact = trimmed.replace(/\s+/g, "").toLowerCase();
-    if (
-      compact.startsWith("javascript:") ||
-      compact.startsWith("vbscript:") ||
-      compact.startsWith("data:")
-    ) {
-      return false;
-    }
-
-    try {
-      const baseUrl = this.resolveBaseUrl(ownerElement);
-      const parsed = new URL(trimmed, baseUrl);
-      return SAFE_URL_PROTOCOLS.has(parsed.protocol);
-    } catch {
-      return false;
-    }
-  }
-
-  private resolveBaseUrl(ownerElement?: Element | null): string {
-    const candidates = [
-      ownerElement?.ownerDocument?.baseURI,
-      globalThis.document?.baseURI,
-    ];
-
-    for (const candidate of candidates) {
-      if (candidate && /^https?:\/\//i.test(candidate)) {
-        return candidate;
-      }
-    }
-
-    return "https://pick-components.local/";
-  }
-
-  private hasControlCharacter(value: string): boolean {
-    for (let index = 0; index < value.length; index++) {
-      const code = value.charCodeAt(index);
-      if (code <= 31 || code === 127) {
-        return true;
-      }
-    }
-
-    return false;
+    return this.safeUrlPolicy.isSafeUrl(value, ownerElement);
   }
 }
 

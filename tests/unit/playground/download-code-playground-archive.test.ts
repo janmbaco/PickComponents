@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Window } from "happy-dom";
 import { downloadCodePlaygroundArchive } from "../../../examples/src/features/playground/use-cases/download-code-playground-archive.use-case.js";
 import type { CodePlaygroundSessionState } from "../../../examples/src/features/playground/models/code-playground.session.js";
 import type { CodePlaygroundTabSnapshot } from "../../../examples/src/features/playground/models/code-playground.session.js";
@@ -18,9 +19,15 @@ class CapturingDownloadPort implements IPlaygroundDownloadPort {
 }
 
 test.describe("downloadCodePlaygroundArchive", () => {
+  const originalDocument = globalThis.document;
   const originalFetch = globalThis.fetch;
 
+  test.beforeEach(() => {
+    (globalThis as any).document = new Window().document;
+  });
+
   test.afterEach(() => {
+    (globalThis as any).document = originalDocument;
     globalThis.fetch = originalFetch;
   });
 
@@ -161,6 +168,65 @@ test.describe("downloadCodePlaygroundArchive", () => {
     expect(readme).toContain("debugging");
     expect(readme).toContain("CSS/HTML text modules");
   });
+
+  test("should structurally sanitize downloaded head content", async () => {
+    globalThis.fetch = async () =>
+      ({
+        ok: true,
+        text: async () => "export {};",
+      }) as Response;
+
+    const session: CodePlaygroundSessionState = {
+      src: "/playground-examples/01-hello/en-light/hello.example.ts",
+      fileName: "hello.example.ts",
+      entryFile: "hello.example.ts",
+      autoBootstrap: false,
+      tabs: [],
+    };
+    const tabs: CodePlaygroundTabSnapshot[] = [
+      {
+        descriptor: {
+          file: "hello.example.ts",
+          label: "Component",
+          lang: "ts",
+        },
+        initialCode: "",
+        code: "export {};",
+      },
+      {
+        descriptor: {
+          file: "index.html",
+          label: "HTML",
+          lang: "html",
+        },
+        initialCode: "",
+        code: [
+          "<!doctype html>",
+          "<html>",
+          "<head>",
+          '  <meta CHARSET="UTF-8">',
+          '  <meta name="viewport" content="width=device-width">',
+          '  <ScRiPt data-x="1">alert(1)</sCrIpT>',
+          '  <script type="module">alert(2)</script >',
+          '  <meta name="description" content="Safe">',
+          "</head>",
+          "<body><hello-example></hello-example></body>",
+          "</html>",
+        ].join("\n"),
+      },
+    ];
+    const downloadPort = new CapturingDownloadPort();
+
+    await downloadCodePlaygroundArchive(session, tabs, "en", downloadPort);
+
+    const indexHtml = requireEntry(downloadPort.entries, "index.html");
+    expect(indexHtml.toLowerCase()).not.toContain("<script data-x");
+    expect(indexHtml).not.toContain("alert(1)");
+    expect(indexHtml).not.toContain("alert(2)");
+    expect(indexHtml).toContain('<meta name="description" content="Safe">');
+    expect(countMatches(indexHtml, '<meta charset="UTF-8">')).toBe(1);
+    expect(countMatches(indexHtml, '<meta name="viewport"')).toBe(1);
+  });
 });
 
 function requireEntry(entries: PlaygroundArchiveEntry[], name: string): string {
@@ -174,4 +240,8 @@ function requireEntry(entries: PlaygroundArchiveEntry[], name: string): string {
 
 function hasEntry(entries: PlaygroundArchiveEntry[], name: string): boolean {
   return entries.some((candidate) => candidate.name === name);
+}
+
+function countMatches(value: string, search: string): number {
+  return value.split(search).length - 1;
 }

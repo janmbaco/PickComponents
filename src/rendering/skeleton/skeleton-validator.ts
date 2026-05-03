@@ -1,3 +1,9 @@
+import {
+  defaultSafeUrlPolicy,
+  isUrlAttributeName,
+  type ISafeUrlPolicy,
+} from "../security/safe-url-policy.js";
+
 /**
  * Defines the responsibility of validating skeleton templates.
  *
@@ -26,9 +32,13 @@ export interface ISkeletonValidator {
  * @remarks
  * - Allowed tags include common semantic, structural, and basic SVG elements.
  * - Allowed attributes include common HTML and selected SVG attributes; prefixes `data-*`, `aria-*`, and XMLNS/xlink are permitted.
- * - Forbidden content includes `<style>`, `<script>`, inline event handlers (`on*`), and `javascript:` URLs.
+ * - Forbidden content includes `<style>`, `<script>`, inline event handlers (`on*`), and unsafe URL protocols.
  */
 export class SkeletonValidator implements ISkeletonValidator {
+  constructor(
+    private readonly safeUrlPolicy: ISafeUrlPolicy = defaultSafeUrlPolicy,
+  ) {}
+
   private readonly ALLOWED_TAGS = new Set([
     // Containers
     "div",
@@ -264,11 +274,22 @@ export class SkeletonValidator implements ISkeletonValidator {
   }
 
   private checkDangerousUrls(html: string): void {
-    // Check for javascript: URLs in href or src
-    if (/\s(?:href|src)\s*=\s*["']?\s*javascript:/i.test(html)) {
-      throw new Error(
-        `[SkeletonValidator] JavaScript URLs are not allowed in href/src attributes.`,
-      );
+    const attrRegex =
+      /\s([a-z][a-z0-9:_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+    let match;
+
+    while ((match = attrRegex.exec(html)) !== null) {
+      const attr = match[1].toLowerCase();
+      if (!isUrlAttributeName(attr)) {
+        continue;
+      }
+
+      const value = match[2] ?? match[3] ?? match[4] ?? "";
+      if (!this.safeUrlPolicy.isSafeUrl(value)) {
+        throw new Error(
+          `[SkeletonValidator] Unsafe URL "${value}" is not allowed in ${attr} attributes.`,
+        );
+      }
     }
   }
 }
